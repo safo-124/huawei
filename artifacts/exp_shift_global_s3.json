@@ -1,0 +1,456 @@
+{
+ "mean": 0.7679435335324832,
+ "std": 0.02241212632684646,
+ "seed_means": [
+  0.7711252217397266,
+  0.7692856528677032,
+  0.7634197259900197
+ ],
+ "per_class": {
+  "Rest": 0.816,
+  "Activity": 0.9065,
+  "Stress": 0.5814
+ },
+ "stress_row": {
+  "Rest": 0.344,
+  "Activity": 0.075,
+  "Stress": 0.581
+ },
+ "low_stress_users": [
+  "S01",
+  "S15",
+  "S17",
+  "f11",
+  "f17",
+  "f18"
+ ],
+ "low_by_seed": [
+  [
+   [
+    "S15",
+    0.28
+   ],
+   [
+    "f17",
+    0.15
+   ],
+   [
+    "f18",
+    0.09
+   ]
+  ],
+  [
+   [
+    "S15",
+    0.28
+   ],
+   [
+    "f11",
+    0.22
+   ],
+   [
+    "f17",
+    0.2
+   ],
+   [
+    "f18",
+    0.09
+   ]
+  ],
+  [
+   [
+    "S01",
+    0.28
+   ],
+   [
+    "S15",
+    0.27
+   ],
+   [
+    "S17",
+    0.26
+   ],
+   [
+    "f11",
+    0.09
+   ],
+   [
+    "f17",
+    0.17
+   ],
+   [
+    "f18",
+    0.05
+   ]
+  ]
+ ],
+ "chosen": [
+  [
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -0.25]}",
+   "{'setting': 1.0, 'shift': 5, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.25]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}"
+  ],
+  [
+   "{'setting': 1.0, 'shift': 10, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -0.75]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.75]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.75]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 0.25, -0.75]}",
+   "{'setting': 1.0, 'shift': 10, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.5]}"
+  ],
+  [
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.75, -0.5]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.5]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.0, -0.75]}",
+   "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}",
+   "{'setting': 1.0, 'shift': 10, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.25]}"
+  ]
+ ],
+ "runs": [
+  {
+   "mean": 0.7711252217397266,
+   "std": 0.024539300876411194,
+   "folds": [
+    0.7340342778210863,
+    0.7553350295619343,
+    0.7765261980914503,
+    0.784153980090335,
+    0.8055766231338269
+   ],
+   "per_class": {
+    "Rest": 0.8197,
+    "Activity": 0.9092,
+    "Stress": 0.5841
+   },
+   "confusion": [
+    [
+     4821,
+     805,
+     421
+    ],
+    [
+     476,
+     7118,
+     52
+    ],
+    [
+     419,
+     89,
+     689
+    ]
+   ],
+   "stress_row": {
+    "Rest": 0.35,
+    "Activity": 0.074,
+    "Stress": 0.576
+   },
+   "low_stress_users": [
+    [
+     "S15",
+     0.28
+    ],
+    [
+     "f17",
+     0.15
+    ],
+    [
+     "f18",
+     0.09
+    ]
+   ],
+   "chosen": [
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -0.25]}",
+    "{'setting': 1.0, 'shift': 5, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.25]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}"
+   ]
+  },
+  {
+   "mean": 0.7692856528677032,
+   "std": 0.021504600105456455,
+   "folds": [
+    0.7292265949951364,
+    0.7691607536947633,
+    0.7720583478076724,
+    0.7880474428119902,
+    0.7879351250289536
+   ],
+   "per_class": {
+    "Rest": 0.8145,
+    "Activity": 0.9036,
+    "Stress": 0.589
+   },
+   "confusion": [
+    [
+     4834,
+     751,
+     462
+    ],
+    [
+     595,
+     6990,
+     61
+    ],
+    [
+     394,
+     85,
+     718
+    ]
+   ],
+   "stress_row": {
+    "Rest": 0.329,
+    "Activity": 0.071,
+    "Stress": 0.6
+   },
+   "low_stress_users": [
+    [
+     "S15",
+     0.28
+    ],
+    [
+     "f11",
+     0.22
+    ],
+    [
+     "f17",
+     0.2
+    ],
+    [
+     "f18",
+     0.09
+    ]
+   ],
+   "chosen": [
+    "{'setting': 1.0, 'shift': 10, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -0.75]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.75]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.75]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 0.25, -0.75]}",
+    "{'setting': 1.0, 'shift': 10, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.5]}"
+   ]
+  },
+  {
+   "mean": 0.7634197259900197,
+   "std": 0.021192477998671744,
+   "folds": [
+    0.7260015007910345,
+    0.7587520959322238,
+    0.7652748036811325,
+    0.7858799203312424,
+    0.7811903092144658
+   ],
+   "per_class": {
+    "Rest": 0.8137,
+    "Activity": 0.9066,
+    "Stress": 0.5712
+   },
+   "confusion": [
+    [
+     4780,
+     817,
+     450
+    ],
+    [
+     500,
+     7097,
+     49
+    ],
+    [
+     422,
+     97,
+     678
+    ]
+   ],
+   "stress_row": {
+    "Rest": 0.353,
+    "Activity": 0.081,
+    "Stress": 0.566
+   },
+   "low_stress_users": [
+    [
+     "S01",
+     0.28
+    ],
+    [
+     "S15",
+     0.27
+    ],
+    [
+     "S17",
+     0.26
+    ],
+    [
+     "f11",
+     0.09
+    ],
+    [
+     "f17",
+     0.17
+    ],
+    [
+     "f18",
+     0.05
+    ]
+   ],
+   "chosen": [
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.75, -0.5]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.5]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.0, -0.75]}",
+    "{'setting': 1.0, 'shift': 0, 'enter': None, 'leave': None, 'offsets': [0.0, 1.25, -1.0]}",
+    "{'setting': 1.0, 'shift': 10, 'enter': None, 'leave': None, 'offsets': [0.0, 0.75, -0.25]}"
+   ]
+  }
+ ],
+ "experiment": "shift_global",
+ "fold_params": {
+  "0": {
+   "hr_q": 0.003,
+   "hr_r": 0.03,
+   "tmp_q": 0.001,
+   "tmp_r": 0.03
+  },
+  "('gp', 0)": {
+   "gp_hr_ell": 120,
+   "gp_hr_sig": 20,
+   "gp_hr_r": 0.003,
+   "gp_tmp_ell": 20,
+   "gp_tmp_sig": 1.0,
+   "gp_tmp_r": 0.03,
+   "gp_edat_ell": 120,
+   "gp_edat_sig": 3.0,
+   "gp_edap_ell": 5,
+   "gp_edap_sig": 0.15,
+   "gp_eda_r": 1e-05,
+   "gp_qp_period": 6,
+   "gp_qp_ell": 2,
+   "gp_qp_sig": 0.03,
+   "gp_qp_r": 1e-05
+  },
+  "1": {
+   "hr_q": 0.003,
+   "hr_r": 0.03,
+   "tmp_q": 0.001,
+   "tmp_r": 0.03
+  },
+  "('gp', 1)": {
+   "gp_hr_ell": 120,
+   "gp_hr_sig": 20,
+   "gp_hr_r": 0.003,
+   "gp_tmp_ell": 20,
+   "gp_tmp_sig": 1.0,
+   "gp_tmp_r": 0.03,
+   "gp_edat_ell": 120,
+   "gp_edat_sig": 3.0,
+   "gp_edap_ell": 5,
+   "gp_edap_sig": 0.15,
+   "gp_eda_r": 0.0001,
+   "gp_qp_period": 6,
+   "gp_qp_ell": 2,
+   "gp_qp_sig": 0.03,
+   "gp_qp_r": 1e-05
+  },
+  "2": {
+   "hr_q": 0.003,
+   "hr_r": 0.03,
+   "tmp_q": 0.0001,
+   "tmp_r": 0.03
+  },
+  "('gp', 2)": {
+   "gp_hr_ell": 120,
+   "gp_hr_sig": 20,
+   "gp_hr_r": 0.003,
+   "gp_tmp_ell": 10,
+   "gp_tmp_sig": 1.0,
+   "gp_tmp_r": 0.01,
+   "gp_edat_ell": 120,
+   "gp_edat_sig": 3.0,
+   "gp_edap_ell": 5,
+   "gp_edap_sig": 0.15,
+   "gp_eda_r": 1e-05,
+   "gp_qp_period": 6,
+   "gp_qp_ell": 2,
+   "gp_qp_sig": 0.03,
+   "gp_qp_r": 1e-05
+  },
+  "3": {
+   "hr_q": 0.003,
+   "hr_r": 0.03,
+   "tmp_q": 0.001,
+   "tmp_r": 0.01
+  },
+  "('gp', 3)": {
+   "gp_hr_ell": 120,
+   "gp_hr_sig": 20,
+   "gp_hr_r": 0.003,
+   "gp_tmp_ell": 10,
+   "gp_tmp_sig": 1.0,
+   "gp_tmp_r": 0.01,
+   "gp_edat_ell": 120,
+   "gp_edat_sig": 3.0,
+   "gp_edap_ell": 5,
+   "gp_edap_sig": 0.15,
+   "gp_eda_r": 0.0001,
+   "gp_qp_period": 6,
+   "gp_qp_ell": 2,
+   "gp_qp_sig": 0.03,
+   "gp_qp_r": 1e-05
+  },
+  "4": {
+   "hr_q": 0.003,
+   "hr_r": 0.03,
+   "tmp_q": 0.0001,
+   "tmp_r": 0.03
+  },
+  "('gp', 4)": {
+   "gp_hr_ell": 120,
+   "gp_hr_sig": 20,
+   "gp_hr_r": 0.003,
+   "gp_tmp_ell": 20,
+   "gp_tmp_sig": 1.0,
+   "gp_tmp_r": 0.03,
+   "gp_edat_ell": 120,
+   "gp_edat_sig": 3.0,
+   "gp_edap_ell": 5,
+   "gp_edap_sig": 0.15,
+   "gp_eda_r": 1e-05,
+   "gp_qp_period": 6,
+   "gp_qp_ell": 2,
+   "gp_qp_sig": 0.03,
+   "gp_qp_r": 1e-05
+  },
+  "('scr', 0)": {
+   "scr_rise": 0.5,
+   "scr_decay": 3.0,
+   "scr_thr": 1.5
+  },
+  "('scr', 1)": {
+   "scr_rise": 0.5,
+   "scr_decay": 3.0,
+   "scr_thr": 1.5
+  },
+  "('scr', 2)": {
+   "scr_rise": 0.5,
+   "scr_decay": 3.0,
+   "scr_thr": 1.5
+  },
+  "('scr', 3)": {
+   "scr_rise": 0.5,
+   "scr_decay": 3.0,
+   "scr_thr": 1.5
+  },
+  "('scr', 4)": {
+   "scr_rise": 0.5,
+   "scr_decay": 3.0,
+   "scr_thr": 1.5
+  }
+ },
+ "spec": {
+  "groups": [
+   "raw",
+   "kalman",
+   "norm"
+  ],
+  "shift": "global"
+ }
+}

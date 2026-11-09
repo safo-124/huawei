@@ -1,0 +1,9 @@
+loaded 85 recordings in 4.6s
+[catboost] rep 0 fold 0 params {'iterations': 500, 'learning_rate': 0.1, 'depth': 8, 'l2_leaf_reg': 3} inner 0.8313 (1296s)
+[catboost] rep 0 fold 1 params {'iterations': 500, 'learning_rate': 0.05, 'depth': 4, 'l2_leaf_reg': 10} inner 0.7246 (1725s)
+[catboost] rep 0 fold 2 params {'iterations': 300, 'learning_rate': 0.1, 'depth': 4, 'l2_leaf_reg': 3} inner 0.7489 (2129s)
+[catboost] rep 0 fold 3 params {'iterations': 500, 'learning_rate': 0.1, 'depth': 4, 'l2_leaf_reg': 10} inner 0.8088 (2567s)
+[catboost] rep 0 fold 4 params {'iterations': 500, 'learning_rate': 0.1, 'depth': 8, 'l2_leaf_reg': 3} inner 0.7060 (3561s)
+[catboost] rep 0 seed 0: macroF1 0.7686 per-class [0.811 0.896 0.599] AUC 0.8846
+[catboost] rep 0 seed 1: macroF1 0.7582 per-class [0.802 0.899 0.577] AUC 0.8806
+[catboost] rep 0 seed 2: macroF1 0.7637 per-class [0.805 0.899 0.59 ] AUC 0.8851

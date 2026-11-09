@@ -1,0 +1,3 @@
+Stress: Stroop, TMCT, Real opinion, Opposite opinion, Subtraction
+Activity: Warm-up, any column with rpm in it, Sprint, Cooldown
+Rest: Baseline, Rest

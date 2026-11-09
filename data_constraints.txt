@@ -1,0 +1,6 @@
+AEROBIC
+- S03: Ended the protocol early, only reaching 90 rpm.
+- S07: Ended the protocol early, only reaching 95 rpm.
+
+ANAEROBIC
+- S06: Ended the protocol early (the last sprint is missing).

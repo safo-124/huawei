@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+build/
+catboost_info/
+artifacts/**/*.npy
+artifacts/**/*.onnx

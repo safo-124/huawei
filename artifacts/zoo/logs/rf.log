@@ -1,0 +1,26 @@
+loaded 85 recordings in 4.6s
+[rf] rep 0 fold 0 params {'n_estimators': 150, 'max_depth': 12, 'max_features': 'sqrt', 'min_samples_leaf': 5} inner 0.7931 (151s)
+[rf] rep 0 fold 1 params {'n_estimators': 150, 'max_depth': 8, 'max_features': 0.2, 'min_samples_leaf': 20} inner 0.6699 (329s)
+[rf] rep 0 fold 2 params {'n_estimators': 150, 'max_depth': 12, 'max_features': 0.4, 'min_samples_leaf': 20} inner 0.7335 (687s)
+[rf] rep 0 fold 3 params {'n_estimators': 100, 'max_depth': 12, 'max_features': 0.2, 'min_samples_leaf': 20} inner 0.7857 (848s)
+[rf] rep 0 fold 4 params {'n_estimators': 100, 'max_depth': 10, 'max_features': 0.2, 'min_samples_leaf': 5} inner 0.6726 (1024s)
+[rf] rep 0 seed 0: macroF1 0.7375 per-class [0.783 0.878 0.553] AUC 0.8634
+[rf] rep 0 seed 1: macroF1 0.7323 per-class [0.776 0.879 0.543] AUC 0.8568
+[rf] rep 0 seed 2: macroF1 0.7338 per-class [0.773 0.875 0.556] AUC 0.8571
+[rf] rep 1 fold 0 params {'n_estimators': 150, 'max_depth': 12, 'max_features': 'sqrt', 'min_samples_leaf': 50} inner 0.7762 (1177s)
+[rf] rep 1 fold 1 params {'n_estimators': 100, 'max_depth': 12, 'max_features': 'sqrt', 'min_samples_leaf': 5} inner 0.6930 (1262s)
+[rf] rep 1 fold 2 params {'n_estimators': 150, 'max_depth': 8, 'max_features': 0.2, 'min_samples_leaf': 50} inner 0.6942 (1415s)
+[rf] rep 1 fold 3 params {'n_estimators': 100, 'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 20} inner 0.7493 (1522s)
+[rf] rep 1 fold 4 params {'n_estimators': 150, 'max_depth': 12, 'max_features': 0.2, 'min_samples_leaf': 50} inner 0.6981 (1744s)
+[rf] rep 1 seed 0: macroF1 0.7283 per-class [0.757 0.868 0.554] AUC 0.8625
+[rf] rep 1 seed 1: macroF1 0.7299 per-class [0.758 0.873 0.548] AUC 0.8634
+[rf] rep 1 seed 2: macroF1 0.7309 per-class [0.754 0.87  0.557] AUC 0.8654
+[rf] rep 2 fold 0 params {'n_estimators': 150, 'max_depth': 12, 'max_features': 'sqrt', 'min_samples_leaf': 5} inner 0.7476 (1886s)
+[rf] rep 2 fold 1 params {'n_estimators': 150, 'max_depth': 10, 'max_features': 0.2, 'min_samples_leaf': 20} inner 0.6382 (2078s)
+[rf] rep 2 fold 2 params {'n_estimators': 100, 'max_depth': 12, 'max_features': 0.4, 'min_samples_leaf': 5} inner 0.8086 (2293s)
+[rf] rep 2 fold 3 params {'n_estimators': 100, 'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 50} inner 0.6873 (2373s)
+[rf] rep 2 fold 4 params {'n_estimators': 150, 'max_depth': 10, 'max_features': 0.2, 'min_samples_leaf': 20} inner 0.7824 (2565s)
+[rf] rep 2 seed 0: macroF1 0.7401 per-class [0.789 0.877 0.576] AUC 0.8659
+[rf] rep 2 seed 1: macroF1 0.7435 per-class [0.784 0.875 0.593] AUC 0.8685
+[rf] rep 2 seed 2: macroF1 0.7322 per-class [0.777 0.866 0.569] AUC 0.8689
+[rf] DONE mean 0.7343 rep means {0: 0.7345168054113337, 1: 0.7296862519393161, 2: 0.7386243170540103} per-class {'Rest': 0.7721, 'Activity': 0.8734, 'Stress': 0.561} AUC 0.8636 export {'params': {'max_depth': 12, 'max_features': 'sqrt', 'min_samples_leaf': 5, 'n_estimators': 150}, 'size_mb': 10.545455, 'onnx_ms': 6.2524449996999465, 'parity': 7.321298796103548e-07, 'ok': True}

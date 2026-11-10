@@ -405,3 +405,36 @@ Out-of-fold XGBoost probabilities of the 9 runs (2a needs no training). Per oute
 - The z rule lifts S15 (0.23 to 0.33) and f18 (0.20 to 0.44), confirming the threshold diagnosis for them, but it imposes a Stress share on every recording, including exercise sessions and strong responders, and costs 0.018 overall. The floor removes the damage and the gain together.
 - The ranking model is worse than the 3-class log-odds in every rule: trained only on the 24 to 25 STRESS training recordings per fold, it sees less data, and its scores are not comparable across recordings, so floors and global fallbacks do not transfer.
 - Step 2 kept nothing. A per-recording threshold only helps if it is applied to the right recordings, which links to the session classifier of Step 3.
+
+### Step 3: session classifier and session specialists
+
+Per repeat and outer fold, fitted on the training recordings only (`training/specialists.py`):
+- Session classifier: logistic regression on five whole-recording summaries (log ratio of HR p95 to p5, HR upper vs lower spread, missed-beat rate, median pulse motion, pulse motion burstiness). It does not use the 3-class model. Accuracy (stress vs exercise session, out of fold): 0.882, 0.906, 0.882 on the three repeats.
+- Specialists (XGBoost, zoo in-fold parameters, 3 seeds): Stress vs Rest on STRESS training recordings, Activity vs Rest on AEROBIC and ANAEROBIC ones.
+- Soft gating: p = p(stress session) x [p_Rest, 0, p_Stress] from the Stress specialist + p(exercise session) x [p_Rest, p_Activity, 0] from the exercise specialist, then the nested per-class offsets.
+- Gated z: the Step 2 zfloor rule applied only to recordings the classifier calls stress sessions. (The gate of a training recording comes from its own out-of-fold classifier; the classifier is near-deterministic, so the effect on tuning is negligible.)
+
+| Variant | Macro-F1 | Repeat 0 / 1 / 2 | Activity | Rest | Stress | Rest F1 in stress / exercise sessions | S15 | S17 | f11 | f17 | f18 | S01 | f13 | Decision |
+|---|---|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---|
+| Single 3-class model (reference) | 0.7652 +/- 0.040 | 0.7690 / 0.7415 / 0.7852 | 0.905 | 0.807 | 0.582 | 0.880 / 0.551 | 0.23 | 0.21 | 0.50 | 0.05 | 0.20 | 0.40 | 0.25 | |
+| Gated specialists | 0.7045 +/- 0.049 | 0.6954 / 0.7175 / 0.7006 | 0.846 | 0.770 | 0.511 | 0.855 / 0.508 | 0.32 | 0.18 | 0.81 | 0.29 | 0.19 | 0.10 | 0.01 | drop (-0.061) |
+| Single + gated z | 0.7656 +/- 0.037 | 0.7680 / 0.7414 / 0.7872 | 0.905 | 0.809 | 0.584 | | 0.25 | 0.21 | 0.54 | 0.05 | 0.23 | 0.40 | 0.27 | drop (+0.0004, 1/3) |
+| Gated specialists + gated z | 0.7041 +/- 0.048 | 0.6987 / 0.7075 / 0.7062 | 0.846 | 0.765 | 0.517 | | 0.29 | 0.14 | 0.82 | 0.28 | 0.27 | 0.10 | 0.04 | drop |
+
+- The session classifier misroutes about 1 recording in 9. A misrouted stress session can no longer produce Stress, and a misrouted exercise session can no longer produce Activity, so whole recordings are lost. This outweighs any specialist gain.
+- The Stress specialist does help some low responders (f11 0.50 to 0.81, f17 0.05 to 0.29, S15 0.23 to 0.32), but loses S01 and f13 almost completely. Rest F1 is lower in both session types.
+- Rest inside exercise sessions (F1 0.55) is the weakest cell of the single model; the exercise specialist does not fix it (0.51).
+- The single 3-class model already infers the session from its 180 s context features (93% of Stress false alarms are inside STRESS sessions, Step 1), so hard session structure adds little and costs a lot when the session guess is wrong.
+
+### Step 4: combination
+
+Nothing from Steps 2 and 3 passed the keep rule. The remaining near-miss not yet measured, averaging the class probabilities of the 3 seeds, was scored on the cached out-of-fold predictions (nested offsets, same folds):
+
+| Model | Single seed (mean of 9 runs) | 3-seed average | Repeat 0 / 1 / 2 (3-seed average) | Activity | Rest | Stress |
+|---|---|---|---|---:|---:|---:|
+| XGBoost | 0.7652 | 0.7676 | 0.7666 / 0.7472 / 0.7890 | 0.906 | 0.811 | 0.587 |
+| Submission F (LightGBM) | 0.7706 | 0.7722 | 0.7732 / 0.7616 / 0.7818 | 0.908 | 0.814 | 0.598 |
+| Submission H (F + calm baseline) | 0.7754 | 0.7781 | 0.7787 / 0.7695 / 0.7861 | 0.911 | 0.818 | 0.613 |
+
+- 3-seed averaging adds +0.0016 to +0.0027 on every model. On top of submission H it gives +0.0027 (repeats -0.0025, +0.0044, +0.0063), under the +0.005 rule, and it would triple the ONNX inference time (about +16 ms per call on this container, which would break the 50 ms budget there).
+- No combination beats the current best submission (H) by the required margin, so no new submission was built. Submission H remains the recommended model.

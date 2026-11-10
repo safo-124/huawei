@@ -377,12 +377,15 @@ def tune_kappa(recs, raw, sh, pop, tr, uids, rep, k, model, p):
     one grouped 75/25 user split of the training fold (as the zoo search)."""
     itr, iva, _ = inner_split(tr, uids, rep, k)
 
+    # a fixed, cheaper inner model keeps the 17 inner fits per fold affordable
+    pin = dict(p, n_estimators=150, learning_rate=0.1)
+
     def score(kappa):
         def g(i):
             return sh.apply(i, raw(i), kappa, pop)
-        Xi, yi, wi = inner_stack(recs, g, itr, 6)
-        Xv, yv, _ = inner_stack(recs, g, iva, 3)
-        m = make(model, p, 0).fit(Xi, yi, sample_weight=wi)
+        Xi, yi, wi = inner_stack(recs, g, itr, 8)
+        Xv, yv, _ = inner_stack(recs, g, iva, 4)
+        m = make("xgb", pin, 0).fit(Xi, yi, sample_weight=wi)
         return float(per_class_f1(yv, m.predict_proba(Xv).argmax(1)).mean())
 
     kappa = {g: 0 for g in M.NORM_GROUPS}

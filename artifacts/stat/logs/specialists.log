@@ -1,0 +1,30 @@
+loaded 85 recordings in 2.5s
+rep 0 fold 0 (25s)
+rep 0 fold 1 (37s)
+rep 0 fold 2 (60s)
+rep 0 fold 3 (90s)
+rep 0 fold 4 (105s)
+rep 0 seed 0: single 0.7668  single+gated_z 0.7634  specialists 0.6997  specialists+gated_z 0.7029 | session acc 0.882
+rep 0 seed 1: single 0.7691  single+gated_z 0.7736  specialists 0.6945  specialists+gated_z 0.6981 | session acc 0.882
+rep 0 seed 2: single 0.7711  single+gated_z 0.7672  specialists 0.6921  specialists+gated_z 0.6950 | session acc 0.882
+rep 1 fold 0 (181s)
+rep 1 fold 1 (204s)
+rep 1 fold 2 (213s)
+rep 1 fold 3 (226s)
+rep 1 fold 4 (238s)
+rep 1 seed 0: single 0.7362  single+gated_z 0.7407  specialists 0.7158  specialists+gated_z 0.7059 | session acc 0.906
+rep 1 seed 1: single 0.7441  single+gated_z 0.7460  specialists 0.7195  specialists+gated_z 0.7063 | session acc 0.906
+rep 1 seed 2: single 0.7441  single+gated_z 0.7376  specialists 0.7172  specialists+gated_z 0.7103 | session acc 0.906
+rep 2 fold 0 (342s)
+rep 2 fold 1 (363s)
+rep 2 fold 2 (389s)
+rep 2 fold 3 (404s)
+rep 2 fold 4 (414s)
+rep 2 seed 0: single 0.7817  single+gated_z 0.7829  specialists 0.7040  specialists+gated_z 0.7047 | session acc 0.882
+rep 2 seed 1: single 0.7894  single+gated_z 0.7903  specialists 0.7022  specialists+gated_z 0.7098 | session acc 0.882
+rep 2 seed 2: single 0.7844  single+gated_z 0.7885  specialists 0.6956  specialists+gated_z 0.7041 | session acc 0.882
+[single] mean 0.7652 +- 0.0399 reps [0.769, 0.7415, 0.7852] per-class {'Rest': 0.8066, 'Activity': 0.9049, 'Stress': 0.5824} rest-in {'STRESS': 0.8802195571923082, 'EXERCISE': 0.5507736836693446} low S15: 0.23, S17: 0.21, f11: 0.50, f17: 0.05, f18: 0.20, S01: 0.40, f13: 0.25
+[specialists] mean 0.7045 +- 0.0488 reps [0.6954, 0.7175, 0.7006] per-class {'Rest': 0.7695, 'Activity': 0.8459, 'Stress': 0.511} rest-in {'STRESS': 0.8554670966267529, 'EXERCISE': 0.5083396924660959} low S15: 0.32, S17: 0.18, f11: 0.81, f17: 0.29, f18: 0.19, S01: 0.10, f13: 0.01
+[single+gated_z] mean 0.7656 +- 0.0373 reps [0.768, 0.7414, 0.7872] per-class {'Rest': 0.8086, 'Activity': 0.9048, 'Stress': 0.5835} rest-in None low S15: 0.25, S17: 0.21, f11: 0.54, f17: 0.05, f18: 0.23, S01: 0.40, f13: 0.27
+[specialists+gated_z] mean 0.7041 +- 0.0475 reps [0.6987, 0.7075, 0.7062] per-class {'Rest': 0.7647, 'Activity': 0.8458, 'Stress': 0.517} rest-in None low S15: 0.29, S17: 0.14, f11: 0.82, f17: 0.28, f18: 0.27, S01: 0.10, f13: 0.04
+session classifier accuracy per repeat: [0.8823529411764706, 0.9058823529411765, 0.8823529411764706]

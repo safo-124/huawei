@@ -1174,6 +1174,49 @@ def features_qda(b, n, params, prev):
     return {"qda_llr_stress": s.astype(np.float64), "qda_llr_act": a.astype(np.float64)}
 
 
+# --------------------------------------------------------------------------
+# Recovery-aware features (past-only): separate post-exercise Rest, where HR
+# is still high but falling and motion has stopped, from Activity.
+# --------------------------------------------------------------------------
+def _past_max_arg(x, w):
+    """Max of x over [t-w+1, t] and the number of seconds since that max."""
+    n = len(x)
+    xp = np.pad(np.where(np.isfinite(x), x, -np.inf), (w - 1, 0), constant_values=-np.inf)
+    win = np.lib.stride_tricks.sliding_window_view(xp, w)[:n]
+    j = win.argmax(axis=1)
+    mx = win[np.arange(n), j]
+    return np.where(np.isfinite(mx), mx, np.nan), (w - 1 - j).astype(np.float64)
+
+
+def _past_frac(x, w):
+    """Mean of x over [t-w+1, t] (x in 0..1, NaN treated as 0)."""
+    c = np.concatenate(([0.0], np.cumsum(np.nan_to_num(x))))
+    i = np.arange(len(x))
+    lo = np.clip(i - w + 1, 0, None)
+    return (c[i + 1] - c[lo]) / (i + 1 - lo)
+
+
+def features_recov(b, n, params, prev):
+    f = {}
+    hr = prev["kf_hr"]
+    ok = np.isfinite(hr)
+    lo = np.percentile(hr[ok], 10) if ok.sum() >= 30 else np.nan
+    for w in (180, 300):
+        mx, since = _past_max_arg(hr, w)
+        drop = mx - hr
+        f[f"rc_drop_{w}"] = drop
+        f[f"rc_drop_frac_{w}"] = drop / np.maximum(mx - lo, 5.0)
+        f[f"rc_since_peak_{w}"] = since
+    slo = prev["kf_hr_slope"]
+    falling = (slo < -0.02).astype(np.float64)
+    for w in (60, 180):
+        f[f"rc_falling_{w}"] = _past_frac(falling, w)
+    mot = prev["bvp_hf_10"]
+    mmx, _ = _past_max_arg(mot, 180)
+    f["rc_motion_drop_180"] = np.log(mmx + 1e-6) - np.log(np.where(np.isfinite(mot), mot, np.nan) + 1e-6)
+    return f
+
+
 GROUP_FUNCS = {
     "raw": features_raw,
     "kalman": features_kalman,
@@ -1187,6 +1230,7 @@ GROUP_FUNCS = {
     "scr": features_scr,
     "vkf": features_vkf,
     "qda": features_qda,
+    "recov": features_recov,
 }
 
 

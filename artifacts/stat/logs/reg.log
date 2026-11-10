@@ -1,0 +1,26 @@
+loaded 85 recordings in 2.8s
+[reg] rep 0 fold 0 {"params": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 4, "min_child_weight": 1, "colsample_bytree": 0.9, "reg_lambda": 5.0, "reg_alpha": 0.0}} (96s)
+[reg] rep 0 fold 1 {"params": {"n_estimators": 500, "learning_rate": 0.1, "max_depth": 8, "min_child_weight": 5, "colsample_bytree": 0.9, "reg_lambda": 1.0, "reg_alpha": 0.1}} (260s)
+[reg] rep 0 fold 2 {"params": {"n_estimators": 300, "learning_rate": 0.1, "max_depth": 6, "min_child_weight": 20, "colsample_bytree": 0.7, "reg_lambda": 20.0, "reg_alpha": 1.0}} (370s)
+[reg] rep 0 fold 3 {"params": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 6, "min_child_weight": 5, "colsample_bytree": 0.5, "reg_lambda": 1.0, "reg_alpha": 0.0}} (471s)
+[reg] rep 0 fold 4 {"params": {"n_estimators": 500, "learning_rate": 0.05, "max_depth": 4, "min_child_weight": 20, "colsample_bytree": 0.9, "reg_lambda": 0.1, "reg_alpha": 1.0}} (614s)
+[reg] rep 0 seed 0 offsets: macroF1 0.7676 per-class [0.805 0.902 0.595] AUC 0.9013
+[reg] rep 0 seed 1 offsets: macroF1 0.7717 per-class [0.816 0.903 0.595] AUC 0.8997
+[reg] rep 0 seed 2 offsets: macroF1 0.7608 per-class [0.809 0.901 0.573] AUC 0.8991
+[reg] rep 1 fold 0 {"params": {"n_estimators": 500, "learning_rate": 0.1, "max_depth": 8, "min_child_weight": 20, "colsample_bytree": 0.7, "reg_lambda": 20.0, "reg_alpha": 0.1}} (771s)
+[reg] rep 1 fold 1 {"params": {"n_estimators": 300, "learning_rate": 0.05, "max_depth": 6, "min_child_weight": 5, "colsample_bytree": 0.5, "reg_lambda": 0.1, "reg_alpha": 1.0}} (871s)
+[reg] rep 1 fold 2 {"params": {"n_estimators": 300, "learning_rate": 0.03, "max_depth": 6, "min_child_weight": 5, "colsample_bytree": 0.7, "reg_lambda": 0.1, "reg_alpha": 5.0}} (968s)
+[reg] rep 1 fold 3 {"params": {"n_estimators": 500, "learning_rate": 0.1, "max_depth": 8, "min_child_weight": 1, "colsample_bytree": 0.5, "reg_lambda": 5.0, "reg_alpha": 5.0}} (1109s)
+[reg] rep 1 fold 4 {"params": {"n_estimators": 300, "learning_rate": 0.03, "max_depth": 4, "min_child_weight": 20, "colsample_bytree": 0.9, "reg_lambda": 0.1, "reg_alpha": 0.0}} (1204s)
+[reg] rep 1 seed 0 offsets: macroF1 0.7559 per-class [0.8   0.897 0.576] AUC 0.8891
+[reg] rep 1 seed 1 offsets: macroF1 0.7480 per-class [0.79  0.9   0.552] AUC 0.8837
+[reg] rep 1 seed 2 offsets: macroF1 0.7567 per-class [0.801 0.902 0.566] AUC 0.8861
+[reg] rep 2 fold 0 {"params": {"n_estimators": 300, "learning_rate": 0.1, "max_depth": 4, "min_child_weight": 5, "colsample_bytree": 0.9, "reg_lambda": 20.0, "reg_alpha": 1.0}} (1308s)
+[reg] rep 2 fold 1 {"params": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 6, "min_child_weight": 20, "colsample_bytree": 0.9, "reg_lambda": 1.0, "reg_alpha": 5.0}} (1415s)
+[reg] rep 2 fold 2 {"params": {"n_estimators": 300, "learning_rate": 0.1, "max_depth": 8, "min_child_weight": 20, "colsample_bytree": 0.5, "reg_lambda": 1.0, "reg_alpha": 0.1}} (1535s)
+[reg] rep 2 fold 3 {"params": {"n_estimators": 200, "learning_rate": 0.05, "max_depth": 6, "min_child_weight": 20, "colsample_bytree": 0.7, "reg_lambda": 5.0, "reg_alpha": 0.0}} (1644s)
+[reg] rep 2 fold 4 {"params": {"n_estimators": 300, "learning_rate": 0.1, "max_depth": 8, "min_child_weight": 20, "colsample_bytree": 0.9, "reg_lambda": 0.1, "reg_alpha": 0.1}} (1758s)
+[reg] rep 2 seed 0 offsets: macroF1 0.7698 per-class [0.812 0.912 0.6  ] AUC 0.9004
+[reg] rep 2 seed 1 offsets: macroF1 0.7716 per-class [0.815 0.912 0.604] AUC 0.9024
+[reg] rep 2 seed 2 offsets: macroF1 0.7737 per-class [0.812 0.911 0.613] AUC 0.9000
+[reg] mean 0.7640 +- 0.0311 reps [0.7667, 0.7535, 0.7717] per-class {'Rest': 0.8068, 'Activity': 0.9045, 'Stress': 0.5862} AUC 0.8958 low-resp Stress F1 0.247

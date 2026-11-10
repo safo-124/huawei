@@ -1,0 +1,26 @@
+loaded 85 recordings in 3.8s
+[base] rep 0 fold 0 {} (75s)
+[base] rep 0 fold 1 {} (122s)
+[base] rep 0 fold 2 {} (216s)
+[base] rep 0 fold 3 {} (336s)
+[base] rep 0 fold 4 {} (405s)
+[base] rep 0 seed 0 offsets: macroF1 0.7668 per-class [0.81  0.901 0.591] AUC 0.9020
+[base] rep 0 seed 1 offsets: macroF1 0.7691 per-class [0.81  0.901 0.596] AUC 0.9018
+[base] rep 0 seed 2 offsets: macroF1 0.7711 per-class [0.815 0.902 0.596] AUC 0.9018
+[base] rep 1 fold 0 {} (489s)
+[base] rep 1 fold 1 {} (586s)
+[base] rep 1 fold 2 {} (617s)
+[base] rep 1 fold 3 {} (662s)
+[base] rep 1 fold 4 {} (706s)
+[base] rep 1 seed 0 offsets: macroF1 0.7362 per-class [0.773 0.9   0.509] AUC 0.8716
+[base] rep 1 seed 1 offsets: macroF1 0.7441 per-class [0.786 0.902 0.524] AUC 0.8731
+[base] rep 1 seed 2 offsets: macroF1 0.7441 per-class [0.788 0.899 0.534] AUC 0.8721
+[base] rep 2 fold 0 {} (877s)
+[base] rep 2 fold 1 {} (968s)
+[base] rep 2 fold 2 {} (1087s)
+[base] rep 2 fold 3 {} (1147s)
+[base] rep 2 fold 4 {} (1187s)
+[base] rep 2 seed 0 offsets: macroF1 0.7817 per-class [0.822 0.911 0.629] AUC 0.9028
+[base] rep 2 seed 1 offsets: macroF1 0.7894 per-class [0.831 0.916 0.632] AUC 0.9018
+[base] rep 2 seed 2 offsets: macroF1 0.7844 per-class [0.825 0.912 0.631] AUC 0.9034
+[base] mean 0.7652 +- 0.0399 reps [0.769, 0.7415, 0.7852] per-class {'Rest': 0.8066, 'Activity': 0.9049, 'Stress': 0.5824} AUC 0.8923 low-resp Stress F1 0.238

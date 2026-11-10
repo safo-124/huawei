@@ -264,3 +264,119 @@ Two inference fixes went into F (they did not exist in submission_B or submissio
 
 1. Configuration bug: `run()` passed only the variant name to the feature code, so the Kalman noise parameters tuned in training (HR q 0.003, r 0.03; temperature q 1e-4, r 0.03) were replaced by the defaults (HR q 0.03, r 2.0; temperature q 1e-6, r 1e-3) at inference. submission_E was therefore evaluated with Kalman features that differ from those it was trained on. `run()` now passes the full configuration from the ONNX metadata, and `make_submission.py` checks parity: per-second probabilities from `run()` must match the training path on STRESS/f01 (max |dp| 1.5e-7 for F) and the feature names must match.
 2. Cold start: the first `run()` call paid about 700 ms of one-time cost (scipy imports, Riccati solutions, filter design). If the evaluator does not warm up, that adds about 14 ms to a 50-call mean. `load_model()` now runs a synthetic 400 s warm-up (about 0.8 s at load time), and the first timed call costs the same as the others (40 ms).
+
+## XGBoost + statistical extensions (items 1 to 6)
+
+### Protocol
+
+- 3 repeats of GroupKFold(5) by `user_id` (shuffle seed = repeat) x 3 model seeds = 9 runs per row. Every row uses the same folds.
+- Features: the variant F set (raw, Kalman, per-recording normalization, breathing, past-only contrast).
+- XGBoost hyperparameters: the ones the model zoo search chose inside each (repeat, fold), reused for every item so that comparisons are paired. Item 5 reruns the search.
+- Fitted inside each training fold only: Kalman noise (maximum likelihood), vector Kalman noise (maximum likelihood), shrinkage population statistics and kappa, QDA (cross-fitted on training people), decoder offsets or costs (nested, on the other folds' out-of-fold predictions).
+- Keep rule: mean macro-F1 at least +0.005 over the reference, a win on at least 2 of 3 repeats, and Stress F1 not lower.
+- Macro-F1 is the mean over the 9 runs, +/- the std over all 45 fold scores. AUC is Stress vs Rest on 10 s windows. Low responders = mean Stress F1 of S15, S17, f11, f17, f18.
+- MET was measured on this container, which is about 1.45x slower than the machine used for the earlier MET figures (submission F: 56.5 ms here, 38 to 40 ms there). Extra feature time is measured on STRESS/f01. Code: `training/stat_ext.py`, results: `artifacts/stat/*.json`.
+
+### Results on top of XGBoost
+
+| Item | Variant | Macro-F1 | Repeat 0 / 1 / 2 | Activity | Rest | Stress | AUC | Low resp. | Extra time | Decision |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| ref | XGBoost, variant F features | 0.7652 +/- 0.040 | 0.7690 / 0.7415 / 0.7852 | 0.905 | 0.807 | 0.582 | 0.892 | 0.238 | | reference |
+| 1 | MAP / LMMSE shrinkage of the normalization statistics | 0.7641 +/- 0.035 | 0.7667 / 0.7468 / 0.7789 | 0.904 | 0.808 | 0.583 | 0.892 | 0.216 | < 0.1 ms | drop (-0.0011, 1/3) |
+| 1 | Calm baseline (calmest 25% of the recording) | 0.7688 +/- 0.036 | 0.7751 / 0.7487 / 0.7828 | 0.907 | 0.810 | 0.595 | 0.894 | 0.192 | < 0.1 ms | drop by the rule (+0.0036, 2/3) |
+| 1 | Calm baseline + shrinkage | 0.7646 +/- 0.040 | 0.7735 / 0.7375 / 0.7829 | 0.904 | 0.805 | 0.587 | 0.892 | 0.180 | < 0.1 ms | drop (-0.0006, 1/3) |
+| 4 | Cost matrix decoder instead of offsets | 0.7596 +/- 0.043 | 0.7653 / 0.7308 / 0.7827 | 0.906 | 0.805 | 0.567 | 0.892 | 0.241 | 0 | drop (-0.0056, 0/3) |
+| 2 | Two-measurement HR Kalman filter | 0.7651 +/- 0.037 | 0.7704 / 0.7389 / 0.7859 | 0.904 | 0.809 | 0.584 | 0.894 | 0.235 | 1.2 ms | drop (-0.0001) |
+| 3 | Shrinkage QDA log-likelihood ratios | 0.7657 +/- 0.040 | 0.7684 / 0.7414 / 0.7872 | 0.905 | 0.808 | 0.584 | 0.892 | 0.222 | about 0.3 ms | drop (+0.0005, 1/3) |
+| 5 | XGBoost search with reg_lambda and reg_alpha | 0.7640 +/- 0.031 | 0.7667 / 0.7535 / 0.7717 | 0.905 | 0.807 | 0.586 | 0.896 | 0.247 | 0 | report only |
+
+#### Item 1: Bayesian shrinkage of personal baselines
+
+- baseline = (n_eff * recording statistic + kappa * population statistic) / (n_eff + kappa), applied to the median and the IQR of the 19 normalized keys. n_eff = valid seconds of that key. The population statistic is the median over the training fold's recordings. kappa is tuned per signal group (heart, EDA, temperature, BVP) over {0, 60, 300, 900, 3600} by coordinate search on a grouped 75/25 inner split of the training fold (inner model: XGBoost with 150 trees on every 8th second).
+- Chosen kappa over 15 folds: heart 0 x6, 60 x4, 300 x2, 900 x2, 3600 x1; EDA 0 x6, 60 x2, 300 x3, 900 x2, 3600 x2; temperature 0 x9, 300 x2, 900 x3, 3600 x1; BVP 0 x14, 60 x1. No shrinkage is the most common choice everywhere and the rest is unstable. Each recording has 900 to 3000 valid seconds, so its own statistic is already precise and shrinking it mostly removes real between-person information.
+- The calm baseline ranks every second by HR level and phasic EDA activity and takes the median and IQR over the calmest 25%. It wins 2 of 3 repeats and raises Stress F1 by 0.013, but +0.0036 is under the bar. Combined with shrinkage the gain disappears.
+- Low responders do not improve with any variant (0.238 to 0.192 for calm; S15 0.23 to 0.02, f11 0.51 to 0.64, f17 0.05 to 0.00). Their Stress tasks look like their Rest in every signal, so no baseline estimate creates contrast that is not there.
+
+#### Item 4: Bayesian cost-matrix decision
+
+- Decision = argmin over j of sum over i of p(i | x) C[i][j] on the balanced XGBoost probabilities, 6 free off-diagonal costs on a log2 grid from 1/8 to 8, coordinate search, nested per outer fold.
+- Chosen costs (geometric mean over folds, truth -> decision): Rest -> Activity 0.45, Rest -> Stress 0.57, Activity -> Rest 0.99, Activity -> Stress 0.84, Stress -> Rest 0.95, Stress -> Activity 1.54. They encode the same preferences as the offsets (borderline Rest goes to Activity; Stress is never called Activity) but with 6 parameters instead of 2 the nested tuning overfits and loses on all 9 runs.
+
+#### Item 2: two-measurement HR Kalman filter
+
+- State [HR, dHR/dt]. Measurements per second: the HR column (noise r_h) and 60 / IBI_duration of each beat in that second (noise r_i per beat, times an inflation factor for beats after a missed beat), fused by precision weighting. Steady-state gain for the nominal fused noise (keeps it an IIR filter, 1.2 ms per recording); the time-varying fused variance enters the innovation variance. Features: fused HR, slope, HR minus slow baseline, innovation power (10, 60 s), measurement agreement (squared normalized difference over 10 and 60 s, signed mean over 60 s) and the share of seconds with both measurements.
+- Maximum likelihood (grid, inside each fold): q 0.003, r_h 0.01, r_i 64 in all 15 folds; inflation 10 (10 folds) or 100 (5 folds). One beat is about 6400 times less reliable than the device HR, which is already a smoothed average, so the fused HR equals the existing Kalman HR and the agreement features repeat what the missed-beat rate already says.
+
+#### Item 3: QDA log-likelihood ratios
+
+- Inputs: z_hr_mean_60, z_ibi_rmssd_60, z_eda_mean_60, resp_wan_rate_60, kf_tmp_slope (missing filled with training medians, clipped to the training 0.5 to 99.5% range). Class covariances shrunk towards the pooled covariance with lambda chosen by cross-fitted held-out likelihood; all 15 folds chose 0.9, so the QDA is close to an LDA. Training rows get LLR values from an inner 5-fold cross-fit by user; test rows from the QDA fitted on the whole training fold.
+- log p(x | Stress) - log p(x | Rest) and log p(x | Activity) - log p(x | Rest) add nothing: the trees already split on the same five inputs.
+
+#### Item 5: regularization as priors
+
+- An L2 penalty on leaf weights (reg_lambda) is a zero-mean Gaussian prior, so the fit is a MAP estimate; an L1 penalty (reg_alpha) is a Laplace prior that sets weak leaves to zero. Searched inside each fold with the zoo protocol (12 trials, grouped 75/25 inner split): reg_lambda in {0.1, 1, 5, 20}, reg_alpha in {0, 0.1, 1, 5}.
+- Chosen over 15 folds: reg_lambda 0.1 x5, 1 x4, 5 x3, 20 x3; reg_alpha 0 x4, 0.1 x4, 1 x4, 5 x3. The choices are spread over the whole grid: with about 70,000 training seconds per fold the likelihood dominates any reasonable prior on leaf weights, and the effective regularization comes from min_child_weight, depth and subsampling. Score within noise (-0.0012).
+
+### Item 6: combination and submission
+
+No item passed the keep rule, so the combination of kept items is plain XGBoost. The reference for "current best submission" is submission F scored with the same protocol:
+
+| Model | Macro-F1 | Repeat 0 / 1 / 2 | Activity | Rest | Stress | AUC | Low resp. | MET STRESS/f01 (this container) |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| Submission F (LightGBM, fixed parameters) | 0.7706 +/- 0.031 | 0.7719 / 0.7599 / 0.7800 | 0.907 | 0.815 | 0.596 | 0.906 | 0.229 | 56.5 ms |
+| XGBoost (plain) | 0.7652 +/- 0.040 | 0.7690 / 0.7415 / 0.7852 | 0.905 | 0.807 | 0.582 | 0.892 | 0.238 | about 59 ms |
+| submission_G: XGBoost + calm baseline | 0.7688 +/- 0.036 | 0.7751 / 0.7487 / 0.7828 | 0.907 | 0.810 | 0.595 | 0.894 | 0.192 | 59.4 ms |
+| **submission_H: LightGBM F + calm baseline** | **0.7754 +/- 0.033** | 0.7812 / 0.7651 / 0.7798 | 0.910 | 0.814 | 0.610 | 0.906 | 0.189 | 52.9 to 60.8 ms |
+
+- XGBoost is not better than submission F. The zoo ranking (XGBoost 0.763 vs LightGBM 0.759) compared XGBoost with a LightGBM whose parameters came from the zoo's own inner search; the fixed parameters of submission F beat them. Measured with the same folds, F leads plain XGBoost by 0.005.
+- submission_G (built on request, XGBoost + calm baseline): -0.0018 vs F; wins repeats 0 and 2 by about 0.003, loses the hardest repeat by 0.011. Not an expected gain.
+- submission_H (LightGBM F + calm baseline, offsets Activity +1.5, Stress -0.75): +0.0048 vs F, wins 2 of 3 repeats (+0.0094, +0.0052, -0.0002), Stress F1 +0.014. This misses the +0.005 rule by 0.0002, so it is a borderline candidate, built because the calm baseline was asked for and this is its stronger form. Expected gain about +0.4 quality points (0.0048 x 80) at equal speed, which is within leaderboard noise.
+- Speed: G and H take about the same time as F (all within timer noise of each other on this container). On the machine where F measured 38 to 40 ms they should be around 40 ms.
+- Both zips pass every `make_submission.py` check: allowed imports, size (357 KB and 379 KB), fresh-process load, output format, and parity of `run()` against the training path (max |dp| 4.8e-7 for G, 1.7e-7 for H).
+
+## Reframing experiments
+
+Reference for the keep rule: XGBoost on the variant F features (0.7652 under the repeated protocol, `artifacts/stat/base.json`). Note that submission F's LightGBM scores 0.7706 under the same protocol, and submission H 0.7754.
+
+### Step 1: diagnostic of missed Stress (no training)
+
+Out-of-fold XGBoost probabilities of the 9 runs (3 repeats x 3 seeds), nested offsets decoder, 10 s windows. Score = mean Stress log-odds against Rest, log p(Stress) - log p(Rest), over the window. AUC = within-recording Stress vs Rest. Values are means over the 9 runs. Low responders marked *.
+
+| Person | Within-recording AUC | Stress F1 | Median score, Stress windows | Median score, Rest windows |
+|---|---:|---:|---:|---:|
+| f17 * | 0.721 | 0.046 | -2.08 | -3.38 |
+| f18 * | 0.811 | 0.201 | -1.89 | -4.21 |
+| S17 * | 0.510 | 0.208 | -1.97 | -1.91 |
+| S15 * | 0.814 | 0.227 | -1.38 | -4.96 |
+| f13 | 0.715 | 0.249 | -3.22 | -4.75 |
+| S01 | 0.714 | 0.399 | -1.15 | -3.16 |
+| f12 | 0.805 | 0.412 | -0.64 | -5.99 |
+| f03 | 0.877 | 0.472 | 0.59 | -3.13 |
+| f11 * | 0.962 | 0.505 | 0.41 | -8.53 |
+| f16 | 0.785 | 0.528 | 1.20 | -4.45 |
+| f06 | 0.952 | 0.553 | 2.63 | -2.69 |
+| f01 | 0.871 | 0.556 | -0.08 | -5.65 |
+| S13 | 0.922 | 0.563 | -0.21 | -5.90 |
+| f09 | 0.930 | 0.605 | -0.67 | -7.22 |
+| f04 | 0.980 | 0.620 | 1.96 | -3.05 |
+| S05 | 0.912 | 0.637 | -0.09 | -6.28 |
+| f15 | 0.958 | 0.663 | 2.42 | -3.51 |
+| S09 | 0.964 | 0.678 | 0.08 | -6.86 |
+| f05 | 0.969 | 0.684 | 5.78 | -7.65 |
+| f10 | 0.925 | 0.688 | 1.76 | -5.86 |
+| S18 | 0.938 | 0.695 | -0.19 | -5.71 |
+| S11 | 0.920 | 0.703 | -0.16 | -5.71 |
+| S16 | 0.970 | 0.714 | 0.45 | -7.33 |
+| S03 | 0.972 | 0.720 | 1.15 | -6.61 |
+| S12 | 0.933 | 0.727 | 0.25 | -4.48 |
+| f02 | 0.939 | 0.758 | 1.62 | -6.40 |
+| S06 | 0.933 | 0.761 | 2.15 | -4.85 |
+| S10 | 0.973 | 0.808 | 2.70 | -6.01 |
+| S08 | 0.971 | 0.829 | 0.65 | -5.74 |
+| S07 | 0.976 | 0.839 | 3.45 | -4.57 |
+| S14 | 0.983 | 0.886 | 4.43 | -7.49 |
+
+Stress false alarms by protocol: STRESS 92.6%, AEROBIC 5.3%, ANAEROBIC 2.1%.
+
+- Mostly a threshold problem: 3 of the 5 low responders (S15 0.81, f18 0.81, f11 0.96) rank their own Stress windows well above their Rest windows, but the whole recording sits below the global threshold (median Stress-window score -1.4 to -1.9 for S15 and f18). S17 (0.51) is invisible and f17 (0.72) is weak. The rule for Step 2 (at least half with AUC >= 0.75) is met.
+- Almost all Stress false alarms (93%) are inside STRESS sessions, so session gating (Step 3) can remove at most about 7% of them; its value would have to come from better Rest/Activity and Stress/Rest specialists.

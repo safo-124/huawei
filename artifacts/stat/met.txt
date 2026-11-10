@@ -1,0 +1,9 @@
+submission_G STRESS/f01.parquet: 201305 rows, MET 59.4 ms (max 79.6 ms), speed score 16.04 / 20
+submission_G AEROBIC/f01.parquet: 158556 rows, MET 44.0 ms (max 59.7 ms), speed score 17.07 / 20
+submission_G ANAEROBIC/f13.parquet: 142797 rows, MET 42.1 ms (max 49.8 ms), speed score 17.19 / 20
+submission_F STRESS/f01.parquet: 201305 rows, MET 56.5 ms (max 90.2 ms), speed score 16.23 / 20
+submission_F AEROBIC/f01.parquet: 158556 rows, MET 46.2 ms (max 67.3 ms), speed score 16.92 / 20
+submission_F ANAEROBIC/f13.parquet: 142797 rows, MET 43.1 ms (max 54.1 ms), speed score 17.12 / 20
+submission_H STRESS/f01.parquet: 201305 rows, MET 60.8 ms (max 95.0 ms), speed score 15.94 / 20
+submission_H AEROBIC/f01.parquet: 158556 rows, MET 43.9 ms (max 49.7 ms), speed score 17.07 / 20
+submission_H ANAEROBIC/f13.parquet: 142797 rows, MET 43.7 ms (max 68.0 ms), speed score 17.09 / 20

@@ -1,0 +1,26 @@
+loaded 85 recordings in 2.9s
+[vkf] rep 0 fold 0 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (57s)
+[vkf] rep 0 fold 1 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 100.0}} (94s)
+[vkf] rep 0 fold 2 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (161s)
+[vkf] rep 0 fold 3 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 100.0}} (237s)
+[vkf] rep 0 fold 4 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (282s)
+[vkf] rep 0 seed 0 offsets: macroF1 0.7651 per-class [0.811 0.901 0.585] AUC 0.9027
+[vkf] rep 0 seed 1 offsets: macroF1 0.7719 per-class [0.815 0.901 0.601] AUC 0.9058
+[vkf] rep 0 seed 2 offsets: macroF1 0.7741 per-class [0.813 0.904 0.603] AUC 0.9039
+[vkf] rep 1 fold 0 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (350s)
+[vkf] rep 1 fold 1 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 100.0}} (426s)
+[vkf] rep 1 fold 2 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (451s)
+[vkf] rep 1 fold 3 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (486s)
+[vkf] rep 1 fold 4 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (521s)
+[vkf] rep 1 seed 0 offsets: macroF1 0.7463 per-class [0.792 0.901 0.534] AUC 0.8717
+[vkf] rep 1 seed 1 offsets: macroF1 0.7373 per-class [0.776 0.894 0.524] AUC 0.8773
+[vkf] rep 1 seed 2 offsets: macroF1 0.7332 per-class [0.781 0.891 0.52 ] AUC 0.8724
+[vkf] rep 2 fold 0 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (631s)
+[vkf] rep 2 fold 1 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 100.0}} (688s)
+[vkf] rep 2 fold 2 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (764s)
+[vkf] rep 2 fold 3 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 10.0}} (802s)
+[vkf] rep 2 fold 4 {"vkf": {"vkf_q": 0.003, "vkf_rh": 0.01, "vkf_ri": 64.0, "vkf_infl": 100.0}} (832s)
+[vkf] rep 2 seed 0 offsets: macroF1 0.7799 per-class [0.825 0.913 0.619] AUC 0.9025
+[vkf] rep 2 seed 1 offsets: macroF1 0.7896 per-class [0.832 0.916 0.637] AUC 0.9027
+[vkf] rep 2 seed 2 offsets: macroF1 0.7881 per-class [0.833 0.917 0.63 ] AUC 0.9029
+[vkf] mean 0.7651 +- 0.0373 reps [0.7704, 0.7389, 0.7859] per-class {'Rest': 0.8087, 'Activity': 0.9042, 'Stress': 0.5838} AUC 0.8936 low-resp Stress F1 0.235

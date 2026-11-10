@@ -380,3 +380,61 @@ Stress false alarms by protocol: STRESS 92.6%, AEROBIC 5.3%, ANAEROBIC 2.1%.
 
 - Mostly a threshold problem: 3 of the 5 low responders (S15 0.81, f18 0.81, f11 0.96) rank their own Stress windows well above their Rest windows, but the whole recording sits below the global threshold (median Stress-window score -1.4 to -1.9 for S15 and f18). S17 (0.51) is invisible and f17 (0.72) is weak. The rule for Step 2 (at least half with AUC >= 0.75) is met.
 - Almost all Stress false alarms (93%) are inside STRESS sessions, so session gating (Step 3) can remove at most about 7% of them; its value would have to come from better Rest/Activity and Stress/Rest specialists.
+
+### Step 2: per-recording adaptive threshold (2a) and ranking score (2b)
+
+Out-of-fold XGBoost probabilities of the 9 runs (2a needs no training). Per outer fold: global offsets tuned on the other folds, then the rule parameters tuned on the other folds' recordings and applied to the fold. Rules act on the non-Activity seconds of every recording (the global decision for Activity is kept):
+
+- gmm: two-component Gaussian mixture (numpy EM) of the Stress score within the recording. If separation (mu1 - mu0) / sqrt((v0 + v1) / 2) >= D, upper weight >= Wmin and upper mean >= Mmin, the upper component becomes Stress and the rest Rest; otherwise the global decision stays. Grid D 0.5 to 4, Wmin 0.05 to 0.3, Mmin none, -4, -2, 0.
+- z: robust z-score of the Stress score within the recording (median, IQR); Stress where z > tau (tau 0 to 4).
+- zfloor: as z, but the raw score must also exceed a floor (-6 to 0).
+
+2a uses the Stress log-odds against Rest. 2b replaces it by an XGBoost `rank:pairwise` model trained inside each fold (groups = recording, Stress vs Rest seconds of STRESS training recordings, every 4th second, 200 trees, zoo depth / child weight / colsample).
+
+| Step | Rule | Macro-F1 | Repeat 0 / 1 / 2 | Activity | Rest | Stress | S15 | S17 | f11 | f17 | f18 | S01 | f13 | Decision |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| ref | global offsets | 0.7652 +/- 0.040 | 0.7690 / 0.7415 / 0.7852 | 0.905 | 0.807 | 0.582 | 0.23 | 0.21 | 0.50 | 0.05 | 0.20 | 0.40 | 0.25 | |
+| 2a | gmm | 0.7632 +/- 0.039 | 0.7677 / 0.7390 / 0.7830 | 0.905 | 0.803 | 0.580 | 0.23 | 0.28 | 0.49 | 0.05 | 0.20 | 0.41 | 0.25 | drop |
+| 2a | z | 0.7473 +/- 0.034 | 0.7454 / 0.7360 / 0.7604 | 0.905 | 0.803 | 0.536 | 0.33 | 0.15 | 0.49 | 0.09 | 0.44 | 0.38 | 0.27 | drop |
+| 2a | zfloor | 0.7649 +/- 0.037 | 0.7684 / 0.7401 / 0.7862 | 0.905 | 0.809 | 0.582 | 0.23 | 0.21 | 0.52 | 0.05 | 0.23 | 0.41 | 0.26 | drop (-0.0003) |
+| 2b | rank + gmm | 0.7612 +/- 0.040 | 0.7650 / 0.7382 / 0.7803 | 0.905 | 0.805 | 0.574 | 0.23 | 0.21 | 0.50 | 0.05 | 0.20 | 0.40 | 0.25 | drop |
+| 2b | rank + z | 0.7351 +/- 0.032 | 0.7338 / 0.7279 / 0.7437 | 0.905 | 0.807 | 0.497 | 0.05 | 0.07 | 0.54 | 0.04 | 0.37 | 0.26 | 0.21 | drop |
+| 2b | rank + zfloor | 0.7389 +/- 0.031 | 0.7391 / 0.7316 / 0.7460 | 0.905 | 0.810 | 0.504 | 0.06 | 0.06 | 0.50 | 0.05 | 0.35 | 0.24 | 0.14 | drop |
+
+- The mixture rule tunes itself off: the most frequent choice is D = 4 (never reached), so it collapses to the global offsets. Within a recording the Stress score is not bimodal enough to split reliably; Stress tasks are short (30 to 200 s) against long Rest, and the score drifts.
+- The z rule lifts S15 (0.23 to 0.33) and f18 (0.20 to 0.44), confirming the threshold diagnosis for them, but it imposes a Stress share on every recording, including exercise sessions and strong responders, and costs 0.018 overall. The floor removes the damage and the gain together.
+- The ranking model is worse than the 3-class log-odds in every rule: trained only on the 24 to 25 STRESS training recordings per fold, it sees less data, and its scores are not comparable across recordings, so floors and global fallbacks do not transfer.
+- Step 2 kept nothing. A per-recording threshold only helps if it is applied to the right recordings, which links to the session classifier of Step 3.
+
+### Step 3: session classifier and session specialists
+
+Per repeat and outer fold, fitted on the training recordings only (`training/specialists.py`):
+- Session classifier: logistic regression on five whole-recording summaries (log ratio of HR p95 to p5, HR upper vs lower spread, missed-beat rate, median pulse motion, pulse motion burstiness). It does not use the 3-class model. Accuracy (stress vs exercise session, out of fold): 0.882, 0.906, 0.882 on the three repeats.
+- Specialists (XGBoost, zoo in-fold parameters, 3 seeds): Stress vs Rest on STRESS training recordings, Activity vs Rest on AEROBIC and ANAEROBIC ones.
+- Soft gating: p = p(stress session) x [p_Rest, 0, p_Stress] from the Stress specialist + p(exercise session) x [p_Rest, p_Activity, 0] from the exercise specialist, then the nested per-class offsets.
+- Gated z: the Step 2 zfloor rule applied only to recordings the classifier calls stress sessions. (The gate of a training recording comes from its own out-of-fold classifier; the classifier is near-deterministic, so the effect on tuning is negligible.)
+
+| Variant | Macro-F1 | Repeat 0 / 1 / 2 | Activity | Rest | Stress | Rest F1 in stress / exercise sessions | S15 | S17 | f11 | f17 | f18 | S01 | f13 | Decision |
+|---|---|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---|
+| Single 3-class model (reference) | 0.7652 +/- 0.040 | 0.7690 / 0.7415 / 0.7852 | 0.905 | 0.807 | 0.582 | 0.880 / 0.551 | 0.23 | 0.21 | 0.50 | 0.05 | 0.20 | 0.40 | 0.25 | |
+| Gated specialists | 0.7045 +/- 0.049 | 0.6954 / 0.7175 / 0.7006 | 0.846 | 0.770 | 0.511 | 0.855 / 0.508 | 0.32 | 0.18 | 0.81 | 0.29 | 0.19 | 0.10 | 0.01 | drop (-0.061) |
+| Single + gated z | 0.7656 +/- 0.037 | 0.7680 / 0.7414 / 0.7872 | 0.905 | 0.809 | 0.584 | | 0.25 | 0.21 | 0.54 | 0.05 | 0.23 | 0.40 | 0.27 | drop (+0.0004, 1/3) |
+| Gated specialists + gated z | 0.7041 +/- 0.048 | 0.6987 / 0.7075 / 0.7062 | 0.846 | 0.765 | 0.517 | | 0.29 | 0.14 | 0.82 | 0.28 | 0.27 | 0.10 | 0.04 | drop |
+
+- The session classifier misroutes about 1 recording in 9. A misrouted stress session can no longer produce Stress, and a misrouted exercise session can no longer produce Activity, so whole recordings are lost. This outweighs any specialist gain.
+- The Stress specialist does help some low responders (f11 0.50 to 0.81, f17 0.05 to 0.29, S15 0.23 to 0.32), but loses S01 and f13 almost completely. Rest F1 is lower in both session types.
+- Rest inside exercise sessions (F1 0.55) is the weakest cell of the single model; the exercise specialist does not fix it (0.51).
+- The single 3-class model already infers the session from its 180 s context features (93% of Stress false alarms are inside STRESS sessions, Step 1), so hard session structure adds little and costs a lot when the session guess is wrong.
+
+### Step 4: combination
+
+Nothing from Steps 2 and 3 passed the keep rule. The remaining near-miss not yet measured, averaging the class probabilities of the 3 seeds, was scored on the cached out-of-fold predictions (nested offsets, same folds):
+
+| Model | Single seed (mean of 9 runs) | 3-seed average | Repeat 0 / 1 / 2 (3-seed average) | Activity | Rest | Stress |
+|---|---|---|---|---:|---:|---:|
+| XGBoost | 0.7652 | 0.7676 | 0.7666 / 0.7472 / 0.7890 | 0.906 | 0.811 | 0.587 |
+| Submission F (LightGBM) | 0.7706 | 0.7722 | 0.7732 / 0.7616 / 0.7818 | 0.908 | 0.814 | 0.598 |
+| Submission H (F + calm baseline) | 0.7754 | 0.7781 | 0.7787 / 0.7695 / 0.7861 | 0.911 | 0.818 | 0.613 |
+
+- 3-seed averaging adds +0.0016 to +0.0027 on every model. On top of submission H it gives +0.0027 (repeats -0.0025, +0.0044, +0.0063), under the +0.005 rule, and it would triple the ONNX inference time (about +16 ms per call on this container, which would break the 50 ms budget there).
+- No combination beats the current best submission (H) by the required margin, so no new submission was built. Submission H remains the recommended model.

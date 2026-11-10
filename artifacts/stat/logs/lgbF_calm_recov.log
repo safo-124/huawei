@@ -1,0 +1,26 @@
+loaded 85 recordings in 2.6s
+[lgbF_calm_recov] rep 0 fold 0 {} (43s)
+[lgbF_calm_recov] rep 0 fold 1 {} (80s)
+[lgbF_calm_recov] rep 0 fold 2 {} (116s)
+[lgbF_calm_recov] rep 0 fold 3 {} (147s)
+[lgbF_calm_recov] rep 0 fold 4 {} (177s)
+[lgbF_calm_recov] rep 0 seed 0 offsets: macroF1 0.7813 per-class [0.821 0.905 0.617] AUC 0.9069
+[lgbF_calm_recov] rep 0 seed 1 offsets: macroF1 0.7743 per-class [0.817 0.901 0.603] AUC 0.9072
+[lgbF_calm_recov] rep 0 seed 2 offsets: macroF1 0.7809 per-class [0.822 0.907 0.613] AUC 0.9070
+[lgbF_calm_recov] rep 1 fold 0 {} (215s)
+[lgbF_calm_recov] rep 1 fold 1 {} (245s)
+[lgbF_calm_recov] rep 1 fold 2 {} (280s)
+[lgbF_calm_recov] rep 1 fold 3 {} (312s)
+[lgbF_calm_recov] rep 1 fold 4 {} (344s)
+[lgbF_calm_recov] rep 1 seed 0 offsets: macroF1 0.7636 per-class [0.804 0.907 0.577] AUC 0.8972
+[lgbF_calm_recov] rep 1 seed 1 offsets: macroF1 0.7614 per-class [0.807 0.905 0.571] AUC 0.8992
+[lgbF_calm_recov] rep 1 seed 2 offsets: macroF1 0.7614 per-class [0.802 0.907 0.571] AUC 0.9003
+[lgbF_calm_recov] rep 2 fold 0 {} (384s)
+[lgbF_calm_recov] rep 2 fold 1 {} (416s)
+[lgbF_calm_recov] rep 2 fold 2 {} (449s)
+[lgbF_calm_recov] rep 2 fold 3 {} (480s)
+[lgbF_calm_recov] rep 2 fold 4 {} (512s)
+[lgbF_calm_recov] rep 2 seed 0 offsets: macroF1 0.7782 per-class [0.828 0.916 0.618] AUC 0.9093
+[lgbF_calm_recov] rep 2 seed 1 offsets: macroF1 0.7799 per-class [0.826 0.916 0.622] AUC 0.9080
+[lgbF_calm_recov] rep 2 seed 2 offsets: macroF1 0.7803 per-class [0.823 0.913 0.625] AUC 0.9092
+[lgbF_calm_recov] mean 0.7735 +- 0.0339 reps [0.7789, 0.7621, 0.7795] per-class {'Rest': 0.8168, 'Activity': 0.9085, 'Stress': 0.6018} AUC 0.9049 low-resp Stress F1 0.159

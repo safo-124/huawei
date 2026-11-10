@@ -496,6 +496,65 @@ NORM_KEYS = (
 CTX_KEYS = ("kf_hr", "bvp_hf_60", "bvp_std_60", "beat_rate_60", "miss_rate_60", "eda_mean_60")
 
 
+def _signal_group(k):
+    """Signal group of a normalized key (one shrinkage strength per group)."""
+    if "eda" in k:
+        return "eda"
+    if "tmp" in k:
+        return "tmp"
+    if "bvp" in k:
+        return "bvp"
+    return "card"  # HR, IBI, HRV, beat and missed-beat rates
+
+
+NORM_GROUPS = ("card", "eda", "tmp", "bvp")
+
+
+def calm_mask(prev, frac=0.25):
+    """Calmest `frac` of the recording: lowest mean rank of HR level and
+    phasic EDA activity (seconds where at least one of them is available)."""
+    sc, cnt = None, None
+    for k in ("hr_mean_60", "kf_eda_phasic_std_60"):
+        x = prev.get(k)
+        if x is None:
+            continue
+        ok = np.isfinite(x)
+        if ok.sum() < 30:
+            continue
+        r = np.zeros(len(x))
+        r[ok] = np.argsort(np.argsort(x[ok])) / max(ok.sum() - 1, 1)
+        sc = r if sc is None else sc + r
+        cnt = ok.astype(float) if cnt is None else cnt + ok
+    if sc is None:
+        return None
+    s = _ratio(sc, cnt)
+    ok = np.isfinite(s)
+    return ok & (s <= np.percentile(s[ok], 100 * frac))
+
+
+def norm_stat(x, mask=None):
+    """(n_eff, median, IQR) of x over the recording (or over mask when it
+    holds at least 30 valid seconds)."""
+    ok = np.isfinite(x)
+    if mask is not None and (ok & mask).sum() >= 30:
+        ok = ok & mask
+    v = x[ok]
+    if len(v) < 30:
+        return 0, np.nan, np.nan
+    lo, med, hi = np.percentile(v, (25, 50, 75))
+    return len(v), med, max(hi - lo, 1e-6)
+
+
+def shrink_stat(ne, med, sc, kappa, pop):
+    """MAP / LMMSE estimate: (n_eff * own + kappa * population) / (n_eff + kappa)."""
+    if kappa <= 0 or pop is None:
+        return med, sc
+    if not np.isfinite(med):
+        return pop[0], pop[1]
+    w = ne / (ne + kappa)
+    return w * med + (1 - w) * pop[0], max(w * sc + (1 - w) * pop[1], 1e-6)
+
+
 def features_norm(b, n, params, prev):
     """Variant D: features expressed relative to the input recording.
 
@@ -503,18 +562,27 @@ def features_norm(b, n, params, prev):
     each second within the recording's own distribution (rank in 0..1).
     Raw features stay in the model, so between-state level differences are
     not lost.
+
+    Optional (params): `norm_calm` takes the median and IQR over the calmest
+    25% of the recording only; `shr_kappa` (per signal group, in seconds) and
+    `shr_pop` (population median and IQR per key, from training) shrink the
+    recording statistics towards the population (MAP / LMMSE).
     """
     f = {}
+    kap = params.get("shr_kappa") or {}
+    pop = params.get("shr_pop") or {}
+    mask = calm_mask(prev) if params.get("norm_calm") else None
     for k in NORM_KEYS:
         x = prev[k]
         ok = np.isfinite(x)
-        if ok.sum() < 30:
+        ne, med, sc = norm_stat(x, mask)
+        med, sc = shrink_stat(ne, med, sc, kap.get(_signal_group(k), 0), pop.get(k))
+        if ok.sum() < 30 or not np.isfinite(med):
             f[f"z_{k}"] = np.full(n, np.nan)
             f[f"q_{k}"] = np.full(n, np.nan)
             continue
+        f[f"z_{k}"] = (x - med) / sc
         v = x[ok]
-        lo, med, hi = np.percentile(v, (25, 50, 75))
-        f[f"z_{k}"] = (x - med) / max(hi - lo, 1e-6)
         r = np.full(n, np.nan)
         r[ok] = np.argsort(np.argsort(v)) / max(len(v) - 1, 1)
         f[f"q_{k}"] = r
@@ -972,6 +1040,140 @@ def features_scr(b, n, params, prev=None):
     return f
 
 
+# --------------------------------------------------------------------------
+# Two-measurement heart rate Kalman filter (item 2)
+#
+# State [HR, dHR/dt] (constant velocity). Two measurements of HR each second:
+# the device HR column (noise vkf_rh) and 60 / IBI_duration of the beats in
+# that second (noise vkf_ri per beat, multiplied by vkf_infl for beats that
+# follow a missed beat). Measurements of the same second are fused by
+# precision weighting into one equivalent measurement with variance r_t.
+# The gain is the steady-state gain for the nominal fused variance (HR plus
+# one clean beat), so the filter stays an IIR filter; the time-varying r_t
+# enters the fusion weights and the innovation variance S_t = P + r_t.
+# --------------------------------------------------------------------------
+DEFAULT_VKF = {"vkf_q": 0.003, "vkf_rh": 0.03, "vkf_ri": 16.0, "vkf_infl": 10.0}
+
+
+def vkf_inputs(b, n, p):
+    hr1 = _ratio(b["hr_s"], b["hr_c"])
+    d, bt, miss = b["beat_d"], b["beat_t"], b["beat_miss"]
+    s = np.clip(bt.astype(np.int64), 0, n - 1)
+    w = 1.0 / (p["vkf_ri"] * np.where(miss, p["vkf_infl"], 1.0))
+    pi = np.bincount(s, weights=w, minlength=n)[:n]
+    si = np.bincount(s, weights=w * 60.0 / d, minlength=n)[:n] if len(d) else np.zeros(n)
+    ibi_hr = _ratio(si, pi, 0.0)
+    ph = np.where(np.isfinite(hr1), 1.0 / p["vkf_rh"], 0.0)
+    ptot = ph + pi
+    y = _ratio(ph * np.nan_to_num(hr1) + si, ptot, 0.0)
+    r_t = _ratio(np.ones(n), ptot, 0.0)
+    r_i = _ratio(np.ones(n), pi, 0.0)
+    return hr1, ibi_hr, r_i, y, r_t
+
+
+def vkf_run(b, n, params):
+    p = dict(DEFAULT_VKF)
+    p.update({k: v for k, v in params.items() if k.startswith("vkf_")})
+    hr1, ibi_hr, r_i, y, r_t = vkf_inputs(b, n, p)
+    r_nom = 1.0 / (1.0 / p["vkf_rh"] + 1.0 / p["vkf_ri"])
+    return p, hr1, ibi_hr, r_i, y, r_t, r_nom
+
+
+def vkf_loglik(b, n, params):
+    """Gaussian innovation log likelihood of the fused filter (measured seconds)."""
+    p, _, _, _, y, r_t, r_nom = vkf_run(b, n, params)
+    if np.isfinite(y).sum() < 30:
+        return 0.0
+    _, _, inn, S = kalman_cv(y, p["vkf_q"], r_nom, smooth=False)
+    St = S - r_nom + r_t
+    e2 = (inn * inn) * S / St
+    ok = np.isfinite(e2)
+    ok[: np.flatnonzero(ok)[min(10, ok.sum() - 1)]] = False  # skip start-up
+    return float(-0.5 * np.sum(np.log(2 * np.pi * St[ok]) + e2[ok]))
+
+
+def features_vkf(b, n, params, prev=None):
+    p, hr1, ibi_hr, r_i, y, r_t, r_nom = vkf_run(b, n, params)
+    keys = ("kfv_hr", "kfv_slope", "kfv_minus_base", "kfv_innov2_10", "kfv_innov2_60",
+            "kfv_agree2_10", "kfv_agree2_60", "kfv_agree_60", "kfv_both_60")
+    if np.isfinite(y).sum() < 30:
+        return {k: np.full(n, np.nan) for k in keys}
+    f = {}
+    lev, slo, inn, S = kalman_cv(y, p["vkf_q"], r_nom)
+    f["kfv_hr"] = lev
+    f["kfv_slope"] = slo
+    f["kfv_minus_base"] = lev - slow_level(y, DEFAULT_KALMAN["base_tau"])
+    en = inn * np.sqrt(S / (S - r_nom + r_t))
+    ok = np.isfinite(en).astype(np.float64)
+    e0 = np.nan_to_num(en)
+    for w in (10, 60):
+        f[f"kfv_innov2_{w}"] = _wmean(e0 * e0, ok, w)
+    # agreement of the two measurements, normalized by their joint noise
+    dd = (hr1 - ibi_hr) / np.sqrt(p["vkf_rh"] + r_i)
+    both = np.isfinite(dd).astype(np.float64)
+    d0 = np.clip(np.nan_to_num(dd), -50, 50)
+    f["kfv_agree2_10"] = _wmean(d0 * d0, both, 10)
+    f["kfv_agree2_60"] = _wmean(d0 * d0, both, 60)
+    f["kfv_agree_60"] = _wmean(d0, both, 60)
+    f["kfv_both_60"] = _wsum(both, 60) / 60.0
+    return f
+
+
+# --------------------------------------------------------------------------
+# Shrinkage QDA log-likelihood ratios (item 3)
+# --------------------------------------------------------------------------
+QDA_KEYS = ("z_hr_mean_60", "z_ibi_rmssd_60", "z_eda_mean_60", "resp_wan_rate_60", "kf_tmp_slope")
+
+
+def qda_matrix(prev, keys=QDA_KEYS):
+    return np.stack([np.asarray(prev[k], dtype=np.float64) for k in keys], axis=1)
+
+
+def qda_fit(Z, y, lam):
+    """Class-conditional Gaussians with covariance shrunk towards the pooled
+    covariance (Friedman's regularized QDA). Missing values are filled with
+    the training medians and every input is clipped to the training 0.5 to
+    99.5% range. Returns plain lists (stored in the ONNX metadata)."""
+    fill = np.nanmedian(Z, axis=0)
+    Z = np.where(np.isfinite(Z), Z, fill)
+    lo, hi = np.percentile(Z, (0.5, 99.5), axis=0)
+    Z = np.clip(Z, lo, hi)
+    sd = np.maximum(Z.std(0), 1e-6)
+    Z = Z / sd
+    d = Z.shape[1]
+    covs = [np.cov(Z[y == c].T) for c in range(3)]
+    pooled = sum(covs) / 3.0
+    mu, prec, logdet = [], [], []
+    for c in range(3):
+        C = (1 - lam) * covs[c] + lam * pooled + 1e-3 * np.eye(d)
+        mu.append(Z[y == c].mean(0).tolist())
+        prec.append(np.linalg.inv(C).tolist())
+        logdet.append(float(np.linalg.slogdet(C)[1]))
+    return dict(fill=fill.tolist(), lo=lo.tolist(), hi=hi.tolist(), sd=sd.tolist(),
+                mu=mu, prec=prec, logdet=logdet)
+
+
+def qda_loglik(Z, q):
+    """log p(x | class) for each class (n x 3)."""
+    Z = np.where(np.isfinite(Z), Z, np.asarray(q["fill"]))
+    Z = np.clip(Z, q["lo"], q["hi"]) / np.asarray(q["sd"])
+    out = np.empty((len(Z), 3))
+    for c in range(3):
+        D = Z - np.asarray(q["mu"][c])
+        out[:, c] = -0.5 * (np.einsum("ij,jk,ik->i", D, np.asarray(q["prec"][c]), D) + q["logdet"][c])
+    return out
+
+
+def qda_llr(Z, q):
+    ll = qda_loglik(Z, q)
+    return ll[:, 2] - ll[:, 0], ll[:, 1] - ll[:, 0]
+
+
+def features_qda(b, n, params, prev):
+    s, a = qda_llr(qda_matrix(prev), params["qda"])
+    return {"qda_llr_stress": s.astype(np.float64), "qda_llr_act": a.astype(np.float64)}
+
+
 GROUP_FUNCS = {
     "raw": features_raw,
     "kalman": features_kalman,
@@ -983,6 +1185,8 @@ GROUP_FUNCS = {
     "gp": features_gp,
     "glrt": features_glrt,
     "scr": features_scr,
+    "vkf": features_vkf,
+    "qda": features_qda,
 }
 
 
@@ -1068,6 +1272,10 @@ def decode(proba, cfg):
 
 
 def _decode_core(proba, cfg):
+    if "cost" in cfg:
+        # Bayes decision: minimum expected cost, cost[i][j] = cost of deciding
+        # j when the truth is i (zero diagonal)
+        return np.argmin(proba @ np.asarray(cfg["cost"]), axis=1)
     logp = np.log(np.clip(proba, 1e-6, 1.0))
     if "priors" in cfg:
         logp = logp - np.log(np.asarray(cfg["priors"]))

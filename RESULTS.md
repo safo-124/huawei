@@ -333,3 +333,50 @@ No item passed the keep rule, so the combination of kept items is plain XGBoost.
 - submission_H (LightGBM F + calm baseline, offsets Activity +1.5, Stress -0.75): +0.0048 vs F, wins 2 of 3 repeats (+0.0094, +0.0052, -0.0002), Stress F1 +0.014. This misses the +0.005 rule by 0.0002, so it is a borderline candidate, built because the calm baseline was asked for and this is its stronger form. Expected gain about +0.4 quality points (0.0048 x 80) at equal speed, which is within leaderboard noise.
 - Speed: G and H take about the same time as F (all within timer noise of each other on this container). On the machine where F measured 38 to 40 ms they should be around 40 ms.
 - Both zips pass every `make_submission.py` check: allowed imports, size (357 KB and 379 KB), fresh-process load, output format, and parity of `run()` against the training path (max |dp| 4.8e-7 for G, 1.7e-7 for H).
+
+## Reframing experiments
+
+Reference for the keep rule: XGBoost on the variant F features (0.7652 under the repeated protocol, `artifacts/stat/base.json`). Note that submission F's LightGBM scores 0.7706 under the same protocol, and submission H 0.7754.
+
+### Step 1: diagnostic of missed Stress (no training)
+
+Out-of-fold XGBoost probabilities of the 9 runs (3 repeats x 3 seeds), nested offsets decoder, 10 s windows. Score = mean Stress log-odds against Rest, log p(Stress) - log p(Rest), over the window. AUC = within-recording Stress vs Rest. Values are means over the 9 runs. Low responders marked *.
+
+| Person | Within-recording AUC | Stress F1 | Median score, Stress windows | Median score, Rest windows |
+|---|---:|---:|---:|---:|
+| f17 * | 0.721 | 0.046 | -2.08 | -3.38 |
+| f18 * | 0.811 | 0.201 | -1.89 | -4.21 |
+| S17 * | 0.510 | 0.208 | -1.97 | -1.91 |
+| S15 * | 0.814 | 0.227 | -1.38 | -4.96 |
+| f13 | 0.715 | 0.249 | -3.22 | -4.75 |
+| S01 | 0.714 | 0.399 | -1.15 | -3.16 |
+| f12 | 0.805 | 0.412 | -0.64 | -5.99 |
+| f03 | 0.877 | 0.472 | 0.59 | -3.13 |
+| f11 * | 0.962 | 0.505 | 0.41 | -8.53 |
+| f16 | 0.785 | 0.528 | 1.20 | -4.45 |
+| f06 | 0.952 | 0.553 | 2.63 | -2.69 |
+| f01 | 0.871 | 0.556 | -0.08 | -5.65 |
+| S13 | 0.922 | 0.563 | -0.21 | -5.90 |
+| f09 | 0.930 | 0.605 | -0.67 | -7.22 |
+| f04 | 0.980 | 0.620 | 1.96 | -3.05 |
+| S05 | 0.912 | 0.637 | -0.09 | -6.28 |
+| f15 | 0.958 | 0.663 | 2.42 | -3.51 |
+| S09 | 0.964 | 0.678 | 0.08 | -6.86 |
+| f05 | 0.969 | 0.684 | 5.78 | -7.65 |
+| f10 | 0.925 | 0.688 | 1.76 | -5.86 |
+| S18 | 0.938 | 0.695 | -0.19 | -5.71 |
+| S11 | 0.920 | 0.703 | -0.16 | -5.71 |
+| S16 | 0.970 | 0.714 | 0.45 | -7.33 |
+| S03 | 0.972 | 0.720 | 1.15 | -6.61 |
+| S12 | 0.933 | 0.727 | 0.25 | -4.48 |
+| f02 | 0.939 | 0.758 | 1.62 | -6.40 |
+| S06 | 0.933 | 0.761 | 2.15 | -4.85 |
+| S10 | 0.973 | 0.808 | 2.70 | -6.01 |
+| S08 | 0.971 | 0.829 | 0.65 | -5.74 |
+| S07 | 0.976 | 0.839 | 3.45 | -4.57 |
+| S14 | 0.983 | 0.886 | 4.43 | -7.49 |
+
+Stress false alarms by protocol: STRESS 92.6%, AEROBIC 5.3%, ANAEROBIC 2.1%.
+
+- Mostly a threshold problem: 3 of the 5 low responders (S15 0.81, f18 0.81, f11 0.96) rank their own Stress windows well above their Rest windows, but the whole recording sits below the global threshold (median Stress-window score -1.4 to -1.9 for S15 and f18). S17 (0.51) is invisible and f17 (0.72) is weak. The rule for Step 2 (at least half with AUC >= 0.75) is met.
+- Almost all Stress false alarms (93%) are inside STRESS sessions, so session gating (Step 3) can remove at most about 7% of them; its value would have to come from better Rest/Activity and Stress/Rest specialists.

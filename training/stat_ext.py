@@ -170,7 +170,8 @@ def tune_cost(data, oof, idx, rounds=3):
             for v in COST_GRID:
                 if v == c[k]:
                     continue
-                q = dict(c, **{k: float(v)})
+                q = dict(c)
+                q[k] = float(v)
                 s = TD.evaluate(data, oof, idx, cost_cfg(q))[0]
                 if s > best + 1e-6:
                     best, c, changed = s, q, True

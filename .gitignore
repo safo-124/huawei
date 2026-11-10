@@ -5,3 +5,4 @@ build/
 catboost_info/
 artifacts/**/*.npy
 artifacts/**/*.onnx
+artifacts/stat/logs/

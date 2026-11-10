@@ -1,0 +1,21 @@
+loaded 85 recordings in 3.3s
+  offsets rep 0 seed 0: 0.7668 [0.81  0.901 0.591]
+  cost rep 0 seed 0: 0.7620 [0.808 0.903 0.575]
+  offsets rep 0 seed 1: 0.7691 [0.81  0.901 0.596]
+  cost rep 0 seed 1: 0.7675 [0.809 0.909 0.586]
+  offsets rep 0 seed 2: 0.7711 [0.815 0.902 0.596]
+  cost rep 0 seed 2: 0.7665 [0.811 0.905 0.583]
+  offsets rep 1 seed 0: 0.7362 [0.773 0.9   0.509]
+  cost rep 1 seed 0: 0.7262 [0.768 0.901 0.476]
+  offsets rep 1 seed 1: 0.7441 [0.786 0.902 0.524]
+  cost rep 1 seed 1: 0.7369 [0.786 0.901 0.505]
+  offsets rep 1 seed 2: 0.7441 [0.788 0.899 0.534]
+  cost rep 1 seed 2: 0.7291 [0.787 0.899 0.494]
+  offsets rep 2 seed 0: 0.7817 [0.822 0.911 0.629]
+  cost rep 2 seed 0: 0.7799 [0.821 0.911 0.625]
+  offsets rep 2 seed 1: 0.7894 [0.831 0.916 0.632]
+  cost rep 2 seed 1: 0.7861 [0.832 0.917 0.626]
+  offsets rep 2 seed 2: 0.7844 [0.825 0.912 0.631]
+  cost rep 2 seed 2: 0.7823 [0.824 0.909 0.629]
+[base_offsets] mean 0.7652 +- 0.0399 reps [0.769, 0.7415, 0.7852] per-class {'Rest': 0.8066, 'Activity': 0.9049, 'Stress': 0.5824} AUC 0.8923 low-resp Stress F1 0.238
+[base_cost] mean 0.7596 +- 0.0435 reps [0.7653, 0.7308, 0.7827] per-class {'Rest': 0.8052, 'Activity': 0.9061, 'Stress': 0.5665} AUC 0.8923 low-resp Stress F1 0.241

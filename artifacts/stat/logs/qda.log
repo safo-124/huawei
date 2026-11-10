@@ -1,0 +1,26 @@
+loaded 85 recordings in 2.8s
+[qda] rep 0 fold 0 {"qda_lambda": 0.9} (50s)
+[qda] rep 0 fold 1 {"qda_lambda": 0.9} (80s)
+[qda] rep 0 fold 2 {"qda_lambda": 0.9} (135s)
+[qda] rep 0 fold 3 {"qda_lambda": 0.9} (201s)
+[qda] rep 0 fold 4 {"qda_lambda": 0.9} (242s)
+[qda] rep 0 seed 0 offsets: macroF1 0.7670 per-class [0.809 0.9   0.594] AUC 0.9014
+[qda] rep 0 seed 1 offsets: macroF1 0.7716 per-class [0.813 0.901 0.6  ] AUC 0.9032
+[qda] rep 0 seed 2 offsets: macroF1 0.7665 per-class [0.81  0.899 0.59 ] AUC 0.9026
+[qda] rep 1 fold 0 {"qda_lambda": 0.9} (301s)
+[qda] rep 1 fold 1 {"qda_lambda": 0.9} (361s)
+[qda] rep 1 fold 2 {"qda_lambda": 0.9} (382s)
+[qda] rep 1 fold 3 {"qda_lambda": 0.9} (412s)
+[qda] rep 1 fold 4 {"qda_lambda": 0.9} (440s)
+[qda] rep 1 seed 0 offsets: macroF1 0.7381 per-class [0.774 0.9   0.512] AUC 0.8726
+[qda] rep 1 seed 1 offsets: macroF1 0.7482 per-class [0.793 0.897 0.547] AUC 0.8736
+[qda] rep 1 seed 2 offsets: macroF1 0.7379 per-class [0.778 0.898 0.518] AUC 0.8725
+[qda] rep 2 fold 0 {"qda_lambda": 0.9} (542s)
+[qda] rep 2 fold 1 {"qda_lambda": 0.9} (595s)
+[qda] rep 2 fold 2 {"qda_lambda": 0.9} (663s)
+[qda] rep 2 fold 3 {"qda_lambda": 0.9} (699s)
+[qda] rep 2 fold 4 {"qda_lambda": 0.9} (725s)
+[qda] rep 2 seed 0 offsets: macroF1 0.7913 per-class [0.834 0.917 0.637] AUC 0.9011
+[qda] rep 2 seed 1 offsets: macroF1 0.7905 per-class [0.836 0.918 0.634] AUC 0.9027
+[qda] rep 2 seed 2 offsets: macroF1 0.7799 per-class [0.824 0.912 0.622] AUC 0.9020
+[qda] mean 0.7657 +- 0.0404 reps [0.7684, 0.7414, 0.7872] per-class {'Rest': 0.8077, 'Activity': 0.9048, 'Stress': 0.5838} AUC 0.8924 low-resp Stress F1 0.222

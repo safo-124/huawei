@@ -1,0 +1,26 @@
+loaded 85 recordings in 3.2s
+[shrink] rep 0 fold 0 {"kappa": {"card": 60, "eda": 0, "tmp": 300, "bvp": 0}} (116s)
+[shrink] rep 0 fold 1 {"kappa": {"card": 60, "eda": 900, "tmp": 900, "bvp": 0}} (205s)
+[shrink] rep 0 fold 2 {"kappa": {"card": 300, "eda": 0, "tmp": 0, "bvp": 0}} (341s)
+[shrink] rep 0 fold 3 {"kappa": {"card": 900, "eda": 0, "tmp": 0, "bvp": 60}} (494s)
+[shrink] rep 0 fold 4 {"kappa": {"card": 0, "eda": 60, "tmp": 3600, "bvp": 0}} (592s)
+[shrink] rep 0 seed 0 offsets: macroF1 0.7701 per-class [0.812 0.899 0.599] AUC 0.9016
+[shrink] rep 0 seed 1 offsets: macroF1 0.7638 per-class [0.811 0.902 0.581] AUC 0.9021
+[shrink] rep 0 seed 2 offsets: macroF1 0.7660 per-class [0.808 0.897 0.594] AUC 0.9016
+[shrink] rep 1 fold 0 {"kappa": {"card": 900, "eda": 0, "tmp": 0, "bvp": 0}} (707s)
+[shrink] rep 1 fold 1 {"kappa": {"card": 0, "eda": 0, "tmp": 0, "bvp": 0}} (840s)
+[shrink] rep 1 fold 2 {"kappa": {"card": 0, "eda": 0, "tmp": 300, "bvp": 0}} (906s)
+[shrink] rep 1 fold 3 {"kappa": {"card": 0, "eda": 3600, "tmp": 0, "bvp": 0}} (981s)
+[shrink] rep 1 fold 4 {"kappa": {"card": 60, "eda": 300, "tmp": 0, "bvp": 0}} (1051s)
+[shrink] rep 1 seed 0 offsets: macroF1 0.7486 per-class [0.795 0.898 0.547] AUC 0.8736
+[shrink] rep 1 seed 1 offsets: macroF1 0.7517 per-class [0.797 0.902 0.546] AUC 0.8735
+[shrink] rep 1 seed 2 offsets: macroF1 0.7402 per-class [0.781 0.9   0.522] AUC 0.8740
+[shrink] rep 2 fold 0 {"kappa": {"card": 60, "eda": 3600, "tmp": 0, "bvp": 0}} (1302s)
+[shrink] rep 2 fold 1 {"kappa": {"card": 0, "eda": 900, "tmp": 0, "bvp": 0}} (1411s)
+[shrink] rep 2 fold 2 {"kappa": {"card": 3600, "eda": 60, "tmp": 900, "bvp": 0}} (1533s)
+[shrink] rep 2 fold 3 {"kappa": {"card": 300, "eda": 300, "tmp": 0, "bvp": 0}} (1599s)
+[shrink] rep 2 fold 4 {"kappa": {"card": 0, "eda": 300, "tmp": 900, "bvp": 0}} (1659s)
+[shrink] rep 2 seed 0 offsets: macroF1 0.7823 per-class [0.829 0.914 0.621] AUC 0.9011
+[shrink] rep 2 seed 1 offsets: macroF1 0.7755 per-class [0.821 0.91  0.614] AUC 0.8989
+[shrink] rep 2 seed 2 offsets: macroF1 0.7788 per-class [0.82  0.911 0.622] AUC 0.8985
+[shrink] mean 0.7641 +- 0.0349 reps [0.7667, 0.7468, 0.7789] per-class {'Rest': 0.8082, 'Activity': 0.9036, 'Stress': 0.5828} AUC 0.8917 low-resp Stress F1 0.216

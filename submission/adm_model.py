@@ -83,15 +83,48 @@ def _col(df, name):
     return np.full(len(df), np.nan)
 
 
-def seconds_index(index):
-    """Integer second of each row relative to the first timestamp."""
-    t = index.values.astype("datetime64[ns]").astype(np.int64)
+MAX_GAP_S = 300  # longer pauses in the timestamps are shortened to this
+
+
+def time_ns(index):
+    """Row timestamps as int64 nanoseconds. Missing timestamps take the
+    previous valid one; an index that is not time-like is read as a 64 Hz row
+    counter."""
+    try:
+        v = index.values
+        if not np.issubdtype(v.dtype, np.datetime64):
+            v = pd.to_datetime(index).values
+        v = v.astype("datetime64[ns]")
+        t = v.astype(np.int64)
+        bad = np.isnat(v)
+    except Exception:
+        return np.arange(len(index), dtype=np.int64) * (NS // 64)
+    if bad.any():
+        if bad.all():
+            return np.arange(len(index), dtype=np.int64) * (NS // 64)
+        i = np.where(~bad, np.arange(len(t)), -1)
+        i = np.maximum.accumulate(i)
+        i[i < 0] = np.flatnonzero(~bad)[0]
+        t = t[i]
+    return t
+
+
+def seconds_index(index, t=None):
+    """Integer second of each row relative to the first timestamp. Rows must
+    be in time order. Pauses longer than MAX_GAP_S are shortened, so a break
+    of hours or days between two parts of an input costs nothing."""
+    if t is None:
+        t = time_ns(index)
+    if len(t) > 1:
+        ex = np.maximum(np.diff(t) - MAX_GAP_S * NS, 0)
+        if ex.any():
+            t = t - np.concatenate(([0], np.cumsum(ex)))
     return (t - t[0]) // NS, t
 
 
-def per_second(df):
+def per_second(df, t=None):
     """Aggregate raw signals to 1 Hz sums and counts. Returns (sec, n, base dict)."""
-    sec, t_ns = seconds_index(df.index)
+    sec, t_ns = seconds_index(df.index, t)
     n = int(sec[-1]) + 1
     b = {}
 
@@ -510,15 +543,18 @@ def _signal_group(k):
 NORM_GROUPS = ("card", "eda", "tmp", "bvp")
 
 
-def calm_mask(prev, frac=0.25):
+def calm_mask(prev, frac=0.25, within=None):
     """Calmest `frac` of the recording: lowest mean rank of HR level and
-    phasic EDA activity (seconds where at least one of them is available)."""
+    phasic EDA activity (seconds where at least one of them is available).
+    With `within`, only those seconds are ranked and returned."""
     sc, cnt = None, None
     for k in ("hr_mean_60", "kf_eda_phasic_std_60"):
         x = prev.get(k)
         if x is None:
             continue
         ok = np.isfinite(x)
+        if within is not None:
+            ok = ok & within
         if ok.sum() < 30:
             continue
         r = np.zeros(len(x))
@@ -555,6 +591,60 @@ def shrink_stat(ne, med, sc, kappa, pop):
     return w * med + (1 - w) * pop[0], max(w * sc + (1 - w) * pop[1], 1e-6)
 
 
+NONACT_KEYS = ("bvp_hf_60", "bvp_std_60", "hr_mean_60", "miss_rate_60", "beat_rate_60")
+
+
+def nonact_mask(prev, q):
+    """Seconds a small first-pass detector (logistic regression on absolute
+    raw features, fitted in training) scores as not Activity."""
+    X = np.stack([prev[k] for k in NONACT_KEYS], axis=1)
+    X = np.where(np.isfinite(X), X, np.asarray(q["med"]))
+    z = ((X - np.asarray(q["mu"])) / np.asarray(q["sd"])) @ np.asarray(q["coef"]) + q["b"]
+    return z < 0
+
+
+def _norm_roll(n, params, prev):
+    """Local normalization: median, IQR and rank over a centred window
+    (norm_win seconds), computed on a coarse grid (norm_grid seconds) with one
+    sort for all keys."""
+    win = int(params.get("norm_win", 600))
+    g = int(params.get("norm_grid", 10))
+    m = -(-n // g)
+    h = max(1, (win // g) // 2)
+    X = np.stack([prev[k] for k in NORM_KEYS])
+    K = X.shape[0]
+    Xp = np.full((K, m * g), np.nan)
+    Xp[:, :n] = X
+    B = Xp.reshape(K, m, g)
+    ok = np.isfinite(B)
+    c = ok.sum(2)
+    xg = np.where(c > 0, np.where(ok, B, 0.0).sum(2) / np.maximum(c, 1), np.nan)
+    xp = np.pad(xg, ((0, 0), (h, h)), constant_values=np.nan)
+    W = np.lib.stride_tricks.sliding_window_view(xp, 2 * h + 1, axis=1)
+    S = np.sort(W, axis=2)  # NaNs last
+    cnt = np.isfinite(W).sum(2)
+
+    def quant(p):
+        i = np.clip(np.rint(p * (cnt - 1)), 0, 2 * h).astype(np.int64)
+        return np.take_along_axis(S, i[..., None], axis=2)[..., 0]
+
+    med = quant(0.5)
+    sc = np.maximum(quant(0.75) - quant(0.25), 1e-6)
+    with np.errstate(invalid="ignore"):
+        rank = (W < xg[..., None]).sum(2) / np.maximum(cnt - 1, 1)
+    bad = cnt < 6
+    med[bad] = np.nan
+    rank = np.where(bad | ~np.isfinite(xg), np.nan, rank)
+    idx = np.arange(n) // g
+    Z = (X - med[:, idx]) / sc[:, idx]
+    Q = np.where(np.isfinite(X), rank[:, idx], np.nan)
+    f = {}
+    for j, k in enumerate(NORM_KEYS):
+        f[f"z_{k}"] = Z[j]
+        f[f"q_{k}"] = Q[j]
+    return f
+
+
 def features_norm(b, n, params, prev):
     """Variant D: features expressed relative to the input recording.
 
@@ -567,26 +657,93 @@ def features_norm(b, n, params, prev):
     25% of the recording only; `shr_kappa` (per signal group, in seconds) and
     `shr_pop` (population median and IQR per key, from training) shrink the
     recording statistics towards the population (MAP / LMMSE).
+
+    `norm_mode` chooses the reference the statistics are taken over:
+      global  the whole input (default)
+      roll    a centred window of norm_win seconds around each second
+      nonact  the seconds a first-pass detector scores as not Activity
+      seg     each segment between detected discontinuities (segment_bounds)
     """
+    mode = params.get("norm_mode", "global")
+    if mode == "roll":
+        return _norm_roll(n, params, prev)
     f = {}
+    for k in NORM_KEYS:
+        f[f"z_{k}"] = np.full(n, np.nan)
+        f[f"q_{k}"] = np.full(n, np.nan)
     kap = params.get("shr_kappa") or {}
     pop = params.get("shr_pop") or {}
-    mask = calm_mask(prev) if params.get("norm_calm") else None
-    for k in NORM_KEYS:
-        x = prev[k]
-        ok = np.isfinite(x)
-        ne, med, sc = norm_stat(x, mask)
-        med, sc = shrink_stat(ne, med, sc, kap.get(_signal_group(k), 0), pop.get(k))
-        if ok.sum() < 30 or not np.isfinite(med):
-            f[f"z_{k}"] = np.full(n, np.nan)
-            f[f"q_{k}"] = np.full(n, np.nan)
-            continue
-        f[f"z_{k}"] = (x - med) / sc
-        v = x[ok]
-        r = np.full(n, np.nan)
-        r[ok] = np.argsort(np.argsort(v)) / max(len(v) - 1, 1)
-        f[f"q_{k}"] = r
+    segs = segment_bounds(b, n, params) if mode == "seg" else [(0, n)]
+    base_mask = nonact_mask(prev, params["nonact"]) if mode == "nonact" else None
+    for a, e in segs:
+        whole = a == 0 and e == n
+        sub = prev if whole else {k: prev[k][a:e] for k in ("hr_mean_60", "kf_eda_phasic_std_60")}
+        mask = None if base_mask is None else base_mask[a:e]
+        if params.get("norm_calm"):
+            cm = calm_mask(sub, within=mask)
+            mask = cm if cm is not None else mask
+        for k in NORM_KEYS:
+            x = prev[k][a:e]
+            ok = np.isfinite(x)
+            ne, med, sc = norm_stat(x, mask)
+            med, sc = shrink_stat(ne, med, sc, kap.get(_signal_group(k), 0), pop.get(k))
+            if ok.sum() < 30 or not np.isfinite(med):
+                continue
+            f[f"z_{k}"][a:e] = (x - med) / sc
+            v = x[ok]
+            r = np.full(e - a, np.nan)
+            if base_mask is not None and (ok & base_mask[a:e]).sum() >= 30:
+                ref = np.sort(x[ok & base_mask[a:e]])  # rank against the non-activity reference
+                r[ok] = np.searchsorted(ref, v) / len(ref)
+            else:
+                r[ok] = np.argsort(np.argsort(v)) / max(len(v) - 1, 1)
+            f[f"q_{k}"][a:e] = r
     return f
+
+
+def segment_bounds(b, n, params):
+    """Split the input where the sensors show a discontinuity that physiology
+    cannot produce: a pause of 30 s or more without any sample, or an abrupt
+    level shift of skin temperature or (log) skin conductance between the
+    seg_w seconds before and after a point. Returns [(start, end), ...]."""
+    w = int(params.get("seg_w", 30))
+    t_thr = float(params.get("seg_tmp", 0.8))
+    e_thr = float(params.get("seg_eda", 1.0))
+    min_len = int(params.get("seg_min", 180))
+    score = np.zeros(n)
+    present = (b["hr_c"] + b["eda_c"] + b["tmp_c"] + b["bvp_c"]) > 0
+    if n > 2 * w + 2:
+        gap = _wsum((~present).astype(np.float64), 30)
+        g = np.flatnonzero((gap >= 30)[:-1] & present[1:] & ~present[:-1]) + 1  # first second after a pause
+        score[g[g < n]] = 10.0
+        with np.errstate(invalid="ignore", divide="ignore"):
+            sigs = ((_ratio(b["tmp_s"], b["tmp_c"]), t_thr),
+                    (np.log(_ratio(b["eda_s"], b["eda_c"]) + 0.05), e_thr))
+        i = np.arange(n)
+        for x, thr in sigs:
+            m = np.isfinite(x)
+            c1 = np.concatenate(([0.0], np.cumsum(np.where(m, x, 0.0))))
+            c0 = np.concatenate(([0.0], np.cumsum(m)))
+
+            def side(a0, a1, need):
+                lo, hi = np.clip(i + a0, 0, n), np.clip(i + a1, 0, n)
+                return _ratio(c1[hi] - c1[lo], c0[hi] - c0[lo], need - 0.5)
+
+            shift = np.abs(side(0, w, 5) - side(-w, 0, 5))      # level before vs after
+            step = np.abs(side(0, 5, 2) - side(-5, 0, 2))        # how abrupt the change is
+            with np.errstate(invalid="ignore"):
+                hit = (shift > thr) & (step > 0.6 * shift)
+            score = np.maximum(score, np.where(hit & np.isfinite(shift), shift / thr, 0.0))
+    # strongest candidate first; a cut needs min_len seconds to every other cut and to both ends
+    cuts = []
+    for t in np.argsort(-score, kind="stable"):
+        if score[t] <= 0:
+            break
+        if t >= min_len and n - t >= min_len and all(abs(t - c) >= min_len for c in cuts):
+            cuts.append(int(t))
+    cuts.sort()
+    edges = [0] + cuts + [n]
+    return list(zip(edges[:-1], edges[1:]))
 
 
 def features_ctx(b, n, params, prev):
@@ -1378,10 +1535,11 @@ class ADMModel(ADM_Base):
         except Exception:
             pass
 
-    def predict_seconds(self, input: pd.DataFrame):
+    def predict_seconds(self, input: pd.DataFrame, t=None):
         """Returns (sec, per-second class probabilities)."""
         # the full config carries the feature groups and the tuned filter parameters
-        sec, _, X = compute_features(input, self.cfg if self.cfg else self.variant)
+        sec, _, X = compute_features(input, self.cfg if self.cfg else self.variant,
+                                     per_second(input, t) if t is not None else None)
         step = int(self.cfg.get("pred_step", 1))
         pts, back = step_points(X.shape[0], step)
         Xs = np.ascontiguousarray(X[pts])
@@ -1391,10 +1549,20 @@ class ADMModel(ADM_Base):
     def run(self, input: pd.DataFrame) -> pd.DataFrame:
         if len(input) == 0:
             return pd.DataFrame({"Activity": pd.Series([], dtype=object)}, index=input.index)
-        sec, proba = self.predict_seconds(input)
-        codes = decode(proba, self.cfg)
-        out = pd.Series(self.labels[codes[sec]], index=input.index, dtype=object)
-        return pd.DataFrame({"Activity": out})
+        t = time_ns(input.index)
+        order = None
+        if len(t) > 1 and np.any(t[1:] < t[:-1]):
+            # rows are not in time order: work on a sorted copy, answer in the given order
+            order = np.argsort(t, kind="stable")
+            sec, proba = self.predict_seconds(input.iloc[order], t[order])
+        else:
+            sec, proba = self.predict_seconds(input, t)
+        lab = self.labels[decode(proba, self.cfg)[sec]]
+        if order is not None:
+            out = np.empty(len(lab), dtype=object)
+            out[order] = lab
+            lab = out
+        return pd.DataFrame({"Activity": pd.Series(lab, index=input.index, dtype=object)})
 
 
 def get_model():

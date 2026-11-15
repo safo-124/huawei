@@ -141,7 +141,7 @@ def per_second(df, t=None):
 
     # EDA (4 Hz)
     eda = _col(df, "EDA")
-    m = eda >= 0
+    m = np.isfinite(eda) & (eda >= 0)
     s, v = sec[m], eda[m]
     b["eda_c"] = bc(s)
     b["eda_s"] = bc(s, v)

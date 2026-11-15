@@ -359,6 +359,8 @@ def add_args(ap):
     ap.add_argument("--trees", type=int, default=0)
     ap.add_argument("--leaves", type=int, default=0)
     ap.add_argument("--missing", action="store_true", help="also score the full format with each signal removed")
+    ap.add_argument("--export-only", action="store_true", help="fit on all data and export ONNX (needs the CV run of --name)")
+    ap.add_argument("--out-name", default=None, help="export: artifact name (default --name)")
 
 
 def main():
@@ -371,6 +373,9 @@ def main():
     suite = Suite(recs)
     uids = np.array([r["uid"] for r in recs])
     mix = parse_mix(a.mix)
+    if a.export_only:
+        export(a, recs, data, suite, uids, mix)
+        return
     folds = user_folds(uids, 5, seed=0)
     fold_of = np.zeros(len(recs), dtype=int)
     extra = tuple(f"no_{s}" for s in SIGNALS) if a.missing else ()
@@ -412,6 +417,43 @@ def main():
     print(f"[{a.name}] DONE " + " ".join(f"{f} {summ[f]['mean']:.4f}" for f in summ)
           + f" | robust {res['robust']:.4f} min {res['minimum']:.4f} | Stress F1 "
           + " ".join(f"{summ[f]['per_class']['Stress']:.3f}" for f in FORMATS) + f" ({res['minutes']:.1f} min)", flush=True)
+
+
+def export(a, recs, data, suite, uids, mix):
+    """Final model: fitted on all people with the training mix of the CV run;
+    Kalman noise by maximum likelihood on all recordings; offsets tuned on the
+    out-of-fold probabilities (mean of the seeds) pooled over the four formats."""
+    import onnx
+    import onnxmltools
+    from onnxmltools.convert.common.data_types import FloatTensorType
+
+    out = a.out_name or a.name
+    kal = T.tune_kalman(recs)
+    ep = {"nonact": fit_nonact(recs, np.arange(len(recs)))} if a.norm_mode == "nonact" else None
+    cfg = build_cfg(a, kal, ep)
+    ck = json.dumps(cfg, sort_keys=True)
+    X, y, w = training_set(suite, sorted(set(uids)), cfg, ck, mix, a.dropout)
+    m = make_model(a, 0).fit(X, y, sample_weight=w)
+    per_seed = [np.load(OUT / f"{a.name}_s{s}.npy", allow_pickle=True) for s in SEEDS]
+    avg = {f: [np.mean([ps[k][i] for ps in per_seed], axis=0) for i in range(len(recs))]
+           for k, f in enumerate(FORMATS)}
+    dec, p = pooled_offsets(data, avg, np.arange(len(recs)))
+    cfg.update(dec)
+    cfg["features"] = list(suite.names)
+    cfg["variant_label"] = out
+    onx = onnxmltools.convert_lightgbm(m, initial_types=[("input", FloatTensorType([None, X.shape[1]]))],
+                                       zipmap=False, target_opset=15)
+    meta = onx.metadata_props.add()
+    meta.key = "adm_config"
+    meta.value = json.dumps(cfg)
+    path = ROOT / "artifacts" / f"model_{out}.onnx"
+    onnx.save_model(onx, str(path))
+    j = next(i for i, r in enumerate(recs) if r["prot"] == "STRESS" and r["name"] == "f01")
+    _, names, Xf = M.compute_features(recs[j]["df"], cfg)
+    assert list(names) == cfg["features"], "feature names differ between training and inference path"
+    np.savez(ROOT / "artifacts" / f"ref_{out}.npz", proba=T.predict_proba(m, Xf, a.pred_step),
+             recording=str(ROOT / "data" / "STRESS" / "f01.parquet"))
+    print(f"exported {path.name}: {X.shape[1]} features, {len(y)} rows, offsets Activity {p['oA']} Stress {p['oS']}")
 
 
 if __name__ == "__main__":

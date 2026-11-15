@@ -1,0 +1,29 @@
+loaded 85 recordings in 2.6s
+  rank rep 0 fold 0 (11047 rows)
+  rank rep 0 fold 1 (11427 rows)
+  rank rep 0 fold 2 (11691 rows)
+  rank rep 0 fold 3 (12198 rows)
+  rank rep 0 fold 4 (11557 rows)
+rep 0 seed 0: gmm 0.7640  z 0.7342  zfloor 0.7401  offsets 0.7668 (42s)
+rep 0 seed 1: gmm 0.7636  z 0.7373  zfloor 0.7388  offsets 0.7691 (48s)
+rep 0 seed 2: gmm 0.7674  z 0.7300  zfloor 0.7383  offsets 0.7711 (55s)
+  rank rep 1 fold 0 (11066 rows)
+  rank rep 1 fold 1 (11715 rows)
+  rank rep 1 fold 2 (10883 rows)
+  rank rep 1 fold 3 (12009 rows)
+  rank rep 1 fold 4 (12247 rows)
+rep 1 seed 0: gmm 0.7325  z 0.7200  zfloor 0.7297  offsets 0.7362 (82s)
+rep 1 seed 1: gmm 0.7370  z 0.7406  zfloor 0.7432  offsets 0.7441 (89s)
+rep 1 seed 2: gmm 0.7452  z 0.7230  zfloor 0.7219  offsets 0.7441 (95s)
+  rank rep 2 fold 0 (11240 rows)
+  rank rep 2 fold 1 (12645 rows)
+  rank rep 2 fold 2 (12019 rows)
+  rank rep 2 fold 3 (11040 rows)
+  rank rep 2 fold 4 (10976 rows)
+rep 2 seed 0: gmm 0.7788  z 0.7415  zfloor 0.7460  offsets 0.7817 (127s)
+rep 2 seed 1: gmm 0.7834  z 0.7497  zfloor 0.7451  offsets 0.7894 (133s)
+rep 2 seed 2: gmm 0.7788  z 0.7399  zfloor 0.7467  offsets 0.7844 (140s)
+[rank offsets] mean 0.7652 +- 0.0399 reps [0.769, 0.7415, 0.7852] per-class {'Rest': 0.8066, 'Activity': 0.9049, 'Stress': 0.5824} low {S15: 0.23, S17: 0.21, f11: 0.50, f17: 0.05, f18: 0.20, S01: 0.40, f13: 0.25}
+[rank gmm] mean 0.7612 +- 0.0400 reps [0.765, 0.7382, 0.7803] per-class {'Rest': 0.8046, 'Activity': 0.9049, 'Stress': 0.5737} low {S15: 0.23, S17: 0.21, f11: 0.50, f17: 0.05, f18: 0.20, S01: 0.40, f13: 0.25}
+[rank z] mean 0.7351 +- 0.0316 reps [0.7338, 0.7279, 0.7437] per-class {'Rest': 0.8066, 'Activity': 0.9049, 'Stress': 0.4965} low {S15: 0.05, S17: 0.07, f11: 0.54, f17: 0.04, f18: 0.37, S01: 0.26, f13: 0.21}
+[rank zfloor] mean 0.7389 +- 0.0305 reps [0.7391, 0.7316, 0.746] per-class {'Rest': 0.8101, 'Activity': 0.9048, 'Stress': 0.5042} low {S15: 0.06, S17: 0.06, f11: 0.52, f17: 0.05, f18: 0.35, S01: 0.24, f13: 0.14}

@@ -438,3 +438,32 @@ Nothing from Steps 2 and 3 passed the keep rule. The remaining near-miss not yet
 
 - 3-seed averaging adds +0.0016 to +0.0027 on every model. On top of submission H it gives +0.0027 (repeats -0.0025, +0.0044, +0.0063), under the +0.005 rule, and it would triple the ONNX inference time (about +16 ms per call on this container, which would break the 50 ms budget there).
 - No combination beats the current best submission (H) by the required margin, so no new submission was built. Submission H remains the recommended model.
+
+## Rest in exercise sessions and seed averaging (on top of submission H)
+
+Reference: submission H (LightGBM F + calm baseline), 0.7754 (repeats 0.7812 / 0.7651 / 0.7798), Stress F1 0.610. Same protocol as above (3 repeats x 5 folds by `user_id` x 3 seeds, nested offsets).
+
+### Recovery-aware features
+
+The weakest cell of H is Rest inside exercise sessions (Rest F1 0.539 there, 0.887 inside stress sessions): rest after exercise, with HR still high, is called Activity. New past-only group `recov` (`adm_model.py`, +2.2 ms per call): drop of the Kalman HR below its maximum over the last 180 s and 300 s, the same drop as a share of the range down to the recording's 10th HR percentile, seconds since that recent maximum, share of the last 60 s and 180 s with a falling HR trend (slope below -0.02 bpm/s), and drop of pulse motion below its 180 s maximum. No absolute time, time since recording start or recording length.
+
+| Variant | Macro-F1 | Repeat 0 / 1 / 2 | Activity | Rest | Stress | Rest F1 in stress / exercise sessions | AUC | Low resp. | Decision |
+|---|---|---|---:|---:|---:|---|---:|---:|---|
+| H | 0.7754 +/- 0.033 | 0.7812 / 0.7651 / 0.7798 | 0.910 | 0.814 | 0.610 | 0.887 / 0.539 | 0.906 | 0.189 | reference |
+| H + recovery features | 0.7735 +/- 0.034 | 0.7789 / 0.7621 / 0.7795 | 0.909 | 0.817 | 0.602 | 0.889 / 0.551 | 0.905 | 0.159 | drop (-0.0019, 0/3) |
+
+- Rest inside exercise sessions improves only a little (0.539 to 0.551) and Stress F1 drops. The 180 s context and the HR slope features already describe the recovery; the remaining errors are rest periods that look like light activity to the wrist.
+
+### Seed averaging in one ONNX graph
+
+`stat_ext.py --export-only --ens 3` merges the three seed models into one ONNX graph that outputs the mean of their probabilities (one file, as the submission format requires). Parity of `run()` against the training path: max |dp| 1.2e-4 (step 5) and 6.3e-5 (step 10). MET on STRESS/f01 on this container, measured back to back:
+
+| Variant | CV macro-F1 | MET (this container) | Decision |
+|---|---|---:|---|
+| H (1 model, step 5) | 0.7754 | 57.7 to 59.9 ms | reference |
+| H, 3 seeds averaged, step 5 | 0.7781 | 72.4 ms | drop: +12.5 ms costs about 0.8 speed points, more than the +0.2 quality points |
+| H, 3 seeds averaged, step 10 | about 0.7742 | 57.9 ms | drop: same speed as H, the coarser step loses the averaging gain |
+
+The step 10 score is estimated from the step 5 out-of-fold predictions (prediction of the block that holds each 10 s step point), not from a retrained run.
+
+Submission H remains the recommended model.

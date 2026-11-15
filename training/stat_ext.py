@@ -232,9 +232,13 @@ def main():
     ap.add_argument("--vkf", action="store_true")
     ap.add_argument("--qda", action="store_true")
     ap.add_argument("--search", action="store_true")
+    ap.add_argument("--extra", nargs="*", default=[], help="extra feature groups appended to GROUPS")
     ap.add_argument("--cost", action="store_true", help="also score the cost-matrix decoder")
     ap.add_argument("--cost-only", action="store_true", help="score the cost decoder on saved OOF")
     ap.add_argument("--repeats", type=int, nargs="*", default=list(REPEATS))
+    ap.add_argument("--ens", type=int, default=1, help="export: number of seeds averaged in one ONNX graph")
+    ap.add_argument("--pred-step", type=int, default=STEP, help="export: classifier step in seconds")
+    ap.add_argument("--out-name", default=None, help="export: artifact name (default --name)")
     ap.add_argument("--export-only", action="store_true",
                     help="fit on all data and export ONNX + reference (needs the CV json of --name)")
     a = ap.parse_args()
@@ -272,7 +276,7 @@ def main():
             report(res)
         return
 
-    groups = list(GROUPS)
+    groups = list(GROUPS) + list(a.extra)
     if a.vkf:
         groups.insert(groups.index("kalman") + 1, "vkf")
     fc = T.FeatureCache(recs)
@@ -476,7 +480,8 @@ def export_final(a, recs, data, uids, zoo):
     y = np.concatenate([r["y_sec"][::2] for r in recs])
     w = np.concatenate([T.sample_weights(r["y_sec"], 1.0, 0)[::2] for r in recs])
     mk = y >= 0
-    m = make(a.model, p, 0).fit(X[mk], y[mk], sample_weight=w[mk])
+    models = [make(a.model, p, s).fit(X[mk], y[mk], sample_weight=w[mk]) for s in range(a.ens)]
+    out_name = a.out_name or a.name
 
     # decoder: offsets on the averaged out-of-fold probabilities
     oofs = [np.load(OUT / f"{a.name}_r{r}_s{s}.npy", allow_pickle=True) for r in REPEATS for s in SEEDS]
@@ -484,32 +489,60 @@ def export_final(a, recs, data, uids, zoo):
     dec, dp, _ = TD.tune(data, avg, allidx, STEP, use_hmm=False)
     cfg.update(dec)
     cfg["features"] = names
-    cfg["variant_label"] = a.name
+    cfg["variant_label"] = out_name
+    cfg["pred_step"] = a.pred_step
     cfg["model"] = a.model
 
-    if a.model == "xgb":
-        b = Z.export("xgb", m, len(names))
-        onx = onnx.load_from_string(b)
-    else:
-        path = ROOT / "artifacts" / f"model_{a.name}.onnx"
-        T.export_onnx(m, len(names), cfg, path)
-        onx = onnx.load(str(path))
+    onx = ensemble_onnx([single_onnx(a.model, m, len(names)) for m in models])
     for prop in list(onx.metadata_props):
         if prop.key == "adm_config":
             onx.metadata_props.remove(prop)
     meta = onx.metadata_props.add()
     meta.key = "adm_config"
     meta.value = json.dumps(cfg)
-    path = ROOT / "artifacts" / f"model_{a.name}.onnx"
+    path = ROOT / "artifacts" / f"model_{out_name}.onnx"
     onnx.save_model(onx, str(path))
 
     # reference: inference-path features (as run() computes them) through the fitted model
     j = next(i for i, r in enumerate(recs) if r["prot"] == "STRESS" and r["name"] == "f01")
     _, nref, Xf = M.compute_features(recs[j]["df"], cfg)
     assert list(nref) == names, "feature names differ between training and inference path"
-    np.savez(ROOT / "artifacts" / f"ref_{a.name}.npz", proba=T.predict_proba(m, Xf, STEP),
+    ref = np.mean([T.predict_proba(m, Xf, a.pred_step) for m in models], axis=0)
+    np.savez(ROOT / "artifacts" / f"ref_{out_name}.npz", proba=ref,
              recording=str(ROOT / "data" / "STRESS" / "f01.parquet"))
-    print(f"exported {path.name}: {len(names)} features, offsets {dp}, params {p}")
+    print(f"exported {path.name}: {len(names)} features, {a.ens} model(s), step {a.pred_step}, offsets {dp}, params {p}")
+
+
+def single_onnx(model_name, m, n_features):
+    """ONNX model whose output 'probabilities' is a float tensor."""
+    import onnx
+    if model_name == "xgb":
+        return onnx.load_from_string(Z.export("xgb", m, n_features))
+    import onnxmltools
+    from onnxmltools.convert.common.data_types import FloatTensorType
+    return onnxmltools.convert_lightgbm(m, initial_types=[("input", FloatTensorType([None, n_features]))],
+                                        zipmap=False, target_opset=15)
+
+
+def ensemble_onnx(models):
+    """One graph: every model reads the shared 'input'; 'probabilities' is their mean."""
+    import onnx
+    from onnx import compose, helper
+    if len(models) == 1:
+        return models[0]
+    parts = [compose.add_prefix(m, f"m{i}_", rename_inputs=False) for i, m in enumerate(models)]
+    g0 = parts[0].graph
+    nodes, inits = [], []
+    for pm in parts:
+        nodes += list(pm.graph.node)
+        inits += list(pm.graph.initializer)
+    nodes.append(helper.make_node("Mean", [f"m{i}_probabilities" for i in range(len(parts))], ["probabilities"]))
+    out = helper.make_tensor_value_info("probabilities", onnx.TensorProto.FLOAT, [None, 3])
+    graph = helper.make_graph(nodes, "ensemble", list(g0.input), [out], initializer=inits)
+    model = helper.make_model(graph, opset_imports=list(models[0].opset_import))
+    model.ir_version = models[0].ir_version
+    onnx.checker.check_model(model)
+    return model
 
 
 if __name__ == "__main__":

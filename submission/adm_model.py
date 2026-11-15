@@ -603,7 +603,7 @@ def nonact_mask(prev, q):
     return z < 0
 
 
-def _norm_roll(n, params, prev):
+def _norm_roll(n, params, prev, prefix=""):
     """Local normalization: median, IQR and rank over a centred window
     (norm_win seconds), computed on a coarse grid (norm_grid seconds) with one
     sort for all keys."""
@@ -640,9 +640,15 @@ def _norm_roll(n, params, prev):
     Q = np.where(np.isfinite(X), rank[:, idx], np.nan)
     f = {}
     for j, k in enumerate(NORM_KEYS):
-        f[f"z_{k}"] = Z[j]
-        f[f"q_{k}"] = Q[j]
+        f[f"{prefix}z_{k}"] = Z[j]
+        f[f"{prefix}q_{k}"] = Q[j]
     return f
+
+
+def features_rnorm(b, n, params, prev):
+    """Local (rolling window) normalization as its own group, so that it can
+    be combined with the whole-input normalization of the `norm` group."""
+    return _norm_roll(n, params, prev, prefix="r")
 
 
 def features_norm(b, n, params, prev):
@@ -1388,6 +1394,7 @@ GROUP_FUNCS = {
     "vkf": features_vkf,
     "qda": features_qda,
     "recov": features_recov,
+    "rnorm": features_rnorm,
 }
 
 
